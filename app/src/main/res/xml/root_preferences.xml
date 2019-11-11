@@ -19,13 +19,13 @@
 
     <PreferenceCategory app:title="Counter Settings">
         <EditTextPreference
-            android:defaultValue="false"
+            android:defaultValue="<username>"
             android:key="Username"
             app:useSimpleSummaryProvider="true"
             android:persistent="true"
             android:title="Name"/>
         <EditTextPreference
-            android:defaultValue="false"
+            android:defaultValue="10"
             android:key="TripLength"
             app:useSimpleSummaryProvider="true"
             android:persistent="true"
