@@ -1,13 +1,26 @@
 package com.example.clicker;
 
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceFragmentCompat;
 
-public class SettingsActivity extends AppCompatActivity {
+import com.example.clicker.objectbo.Point;
+import com.example.clicker.objectbo.PointListAdapter;
 
+public class SettingsActivity extends AppCompatActivity {
+    public void clearYearCounts(View view) {
+        PointListAdapter pointListAdapter;
+        pointListAdapter = new PointListAdapter(this.getApplicationContext());
+        pointListAdapter.clearPoints();
+    }
+    public void clearTripCounts(View view) {
+        PointListAdapter pointListAdapter;
+        pointListAdapter = new PointListAdapter(this.getApplicationContext());
+        pointListAdapter.clearPoints();
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

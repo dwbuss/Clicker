@@ -17,29 +17,18 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory app:title="Counter">
-
-        <EditTextPreference
-            android:defaultValue="Default value"
-            android:key="edit_text_preference_1"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="Yearly" />
+    <PreferenceCategory app:title="Counter Settings">
         <EditTextPreference
             android:defaultValue="false"
-            android:key="edit_text_preference_1"
-            android:selectAllOnFocus="true"
-            android:singleLine="true"
-            android:title="Weekly" />
-
+            android:key="Username"
+            app:useSimpleSummaryProvider="true"
+            android:persistent="true"
+            android:title="Name"/>
+        <EditTextPreference
+            android:defaultValue="false"
+            android:key="TripLength"
+            app:useSimpleSummaryProvider="true"
+            android:persistent="true"
+            android:title="Trip Length in Days"/>
     </PreferenceCategory>
-
-    <PreferenceCategory app:title="@string/sync_header">
-
-        <SwitchPreferenceCompat
-            app:key="sync"
-            app:title="Sync Data" />
-
-    </PreferenceCategory>
-
 </PreferenceScreen>

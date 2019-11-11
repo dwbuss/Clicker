@@ -19,6 +19,8 @@ android {
     }
 }
 
+apply plugin: 'io.objectbox' // after applying Android plugin
+
 dependencies {
     implementation 'com.android.volley:volley:1.1.0'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -29,4 +31,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'com.google.android.material:material:1.0.0'
+    implementation 'io.objectbox:objectbox-android:1.4.0'
+    implementation 'androidx.room:room-runtime:2.2.1'
+    annotationProcessor 'androidx.room:room-compiler:2.2.1'
 }

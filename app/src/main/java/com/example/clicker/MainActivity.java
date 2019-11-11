@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.Service;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -16,12 +17,16 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -29,16 +34,27 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.clicker.objectbo.Point;
+import com.example.clicker.objectbo.PointListAdapter;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+
+import io.objectbox.Box;
+import io.objectbox.BoxStore;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
     private final static int ALL_PERMISSIONS_RESULT = 101;
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
     private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1;
+    private RecyclerView rvPointList;
+    private List<Point> pointList = new ArrayList<>();
+    private PointListAdapter pointListAdapter;
+    private Button fabAddPoint;
 
     LocationManager locationManager;
     Location loc;
@@ -66,8 +82,26 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 getLocation();
             }
         }
+        initView();
     }
 
+    private void initView() {
+        pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
+        pointListAdapter.updatePoints();
+        rvPointList = (RecyclerView) findViewById(R.id.rvPointList);
+        rvPointList.setHasFixedSize(true);
+        LinearLayoutManager llm2 = new LinearLayoutManager(MainActivity.this);
+        llm2.setOrientation(LinearLayoutManager.VERTICAL);
+        rvPointList.setLayoutManager(llm2);
+        rvPointList.setAdapter(pointListAdapter);
+        fabAddPoint = (Button) findViewById(R.id.clickBtn);
+        /*fabAddPoint.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                pointListAdapter.showAddEditDialog(PointListAdapter.MODE_ADD, 0);
+            }
+        });*/
+    }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
@@ -126,9 +160,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
     public void addCount(View view) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String username = prefs.getString("Username", null);
+        pointListAdapter.addOrUpdatePoint(new Point(0, username, loc.getLongitude(),loc.getLatitude() ));
+        pointListAdapter.updatePoints();
         bump(R.id.total);
         bump(R.id.weekly);
-        bump(R.id.daily);
+
+        TextView totalView = (TextView) findViewById(R.id.daily);
+        BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
+        Box<Point> pointBox = boxStore.boxFor(Point.class);
+
+        totalView.setText(Integer.toString(pointBox.getAll().size()));
     }
 
     public void bump(int id) {
