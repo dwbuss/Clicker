@@ -50,7 +50,7 @@ public class PointListAdapter extends RecyclerView.Adapter<PointListAdapter.Poin
 
     @Override
     public PointListAdapter.PointListHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext()).
+        View itemView = LayoutInflater.from(context).
                 inflate(R.layout.row_point_list, parent, false);
         return new PointListHolder(itemView);
 

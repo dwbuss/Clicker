@@ -21,6 +21,7 @@ public class SettingsActivity extends AppCompatActivity {
         pointListAdapter = new PointListAdapter(this.getApplicationContext());
         pointListAdapter.clearPoints();
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

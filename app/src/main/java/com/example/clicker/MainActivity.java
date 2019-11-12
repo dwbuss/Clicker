@@ -62,6 +62,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     ArrayList<String> permissionsRejected = new ArrayList<>();
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        initView();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -85,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         initView();
     }
 
-    private void initView() {
+    public void initView() {
         pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
         pointListAdapter.updatePoints();
         rvPointList = (RecyclerView) findViewById(R.id.rvPointList);
@@ -101,6 +107,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 pointListAdapter.showAddEditDialog(PointListAdapter.MODE_ADD, 0);
             }
         });*/
+        BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
+        Box<Point> pointBox = boxStore.boxFor(Point.class);
+
+        ((TextView)findViewById(R.id.daily)).setText(Integer.toString(pointBox.getAll().size()));
+        ((TextView)findViewById(R.id.weekly)).setText(Integer.toString(pointBox.getAll().size()));
+        ((TextView)findViewById(R.id.total)).setText(Integer.toString(pointBox.getAll().size()));
     }
 
     @Override
