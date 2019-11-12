@@ -19,7 +19,7 @@
 
     <PreferenceCategory app:title="Counter Settings">
         <EditTextPreference
-            android:defaultValue="<username>"
+            android:defaultValue="{username}"
             android:key="Username"
             app:useSimpleSummaryProvider="true"
             android:persistent="true"
