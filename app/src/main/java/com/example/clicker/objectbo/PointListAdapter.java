@@ -59,7 +59,7 @@ public class PointListAdapter extends RecyclerView.Adapter<PointListAdapter.Poin
     @Override
     public void onBindViewHolder(PointListAdapter.PointListHolder holder, int position) {
         final Point point = pointList.get(position);
-        holder.tvPointWithJersey.setText(point.getName() + " (" + point.getLat() + ":" + point.getLon() + ")");
+        holder.tvPointWithJersey.setText(point.getName() +" " + point.getContactType()+" (" + point.getLat() + ":" + point.getLon() + ")");
     }
 
     @Override

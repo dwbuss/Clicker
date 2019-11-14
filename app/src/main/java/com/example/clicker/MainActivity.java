@@ -3,7 +3,6 @@ package com.example.clicker;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
-import android.app.Service;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,13 +13,11 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -39,6 +36,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.clicker.objectbo.Point;
 import com.example.clicker.objectbo.PointListAdapter;
+import com.example.clicker.objectbo.Point_;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -51,10 +49,10 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.objectbox.Box;
 import io.objectbox.BoxStore;
@@ -68,10 +66,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private List<Point> pointList = new ArrayList<>();
     private PointListAdapter pointListAdapter;
     private Button fabAddPoint;
+    private Map<String, Float> colors;
 
     ArrayList<String> permissionsRejected = new ArrayList<>();
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
+    private LocationManager locationManager;
 
     @Override
     protected void onResume() {
@@ -82,6 +82,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        colors = new HashMap<>();
+        colors.put("CATCH", BitmapDescriptorFactory.HUE_RED);
+        colors.put("FOLLOW", BitmapDescriptorFactory.HUE_BLUE);
+        colors.put("CONTACT", BitmapDescriptorFactory.HUE_YELLOW);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -97,12 +101,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-        ((LocationManager) this.getSystemService(Context.LOCATION_SERVICE))
-                .requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                        1000,
-                        3,
-                        locationListenerGPS);
+        locationManager = ((LocationManager) this.getSystemService(Context.LOCATION_SERVICE));
+        getLocation();
         initView();
     }
 
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             LatLng coordinate = new LatLng(location.getLatitude(),
                     location.getLongitude());
             android.graphics.Point mappoint = mMap.getProjection().toScreenLocation(coordinate);
-            mappoint.set(mappoint.x, mappoint.y - 300); // change these values as you need , just hard coded a value if you want you can give it based on a ratio like using DisplayMetrics  as well
+            //   mappoint.set(mappoint.x, mappoint.y - 300); // change these values as you need , just hard coded a value if you want you can give it based on a ratio like using DisplayMetrics  as well
             mMap.animateCamera(CameraUpdateFactory.newLatLng(mMap.getProjection().fromScreenLocation(mappoint)));
             if (location.hasBearing() && !mMap.isMyLocationEnabled()) {
                 CameraPosition cameraPosition = new CameraPosition.Builder()
@@ -163,9 +163,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 pointListAdapter.showAddEditDialog(PointListAdapter.MODE_ADD, 0);
             }
         });*/
+        refreshCounts();
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
 
+        List<Point> points = pointBox.getAll();
+        for (Point p : points) {
+            addPointMarker(p);
+        }
+    }
+
+    public void refreshCounts() {
+        BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
+        Box<Point> pointBox = boxStore.boxFor(Point.class);
+        ((Button) findViewById(R.id.catchBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "CATCH").build().count()));
+        ((Button) findViewById(R.id.contactBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "CONTACT").build().count()));
+        ((Button) findViewById(R.id.followBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "FOLLOW").build().count()));
     }
 
     @Override
@@ -230,17 +243,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Box<Point> pointBox = boxStore.boxFor(Point.class);
 
     }
-
-    private void getLocation() {
-        try {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                    MIN_TIME_BW_UPDATES,
-                    MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-            loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        } catch (SecurityException e) {
-            e.printStackTrace();
-        }
-    }
 */
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -271,8 +273,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             return;
                         }
                     }
-                } else {
-                    //                   getLocation();
                 }
                 break;
         }
@@ -297,12 +297,53 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void addContact(View view) {
+        addPoint("CONTACT");
+        refreshCounts();
     }
 
     public void addFollow(View view) {
+        addPoint("FOLLOW");
+        refreshCounts();
     }
 
     public void addCatch(View view) {
+        addPoint("CATCH");
+        refreshCounts();
+    }
+
+    public void addPoint(String contactType) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String username = prefs.getString("Username", null);
+        Location loc = getLocation();
+        Point point = new Point(0, username, contactType, loc.getLongitude(), loc.getLatitude());
+        pointListAdapter.addOrUpdatePoint(point);
+        pointListAdapter.updatePoints();
+        addPointMarker(point);
+    }
+
+    private void addPointMarker(Point point) {
+        try {
+            mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(point.getLat(),
+                            point.getLon()))
+                    .title(point.getName() + point.getContactType())
+                    .icon(BitmapDescriptorFactory.defaultMarker(colors.get(point.getContactType()))));
+        } catch (Exception e) {
+            System.err.println("Failed to add " + point.getName() + point.getContactType() + point.getLon() + point.getLat());
+        }
+    }
+
+    private Location getLocation() {
+        try {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                    1000,
+                    3,
+                    locationListenerGPS);
+            return locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        } catch (SecurityException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
@@ -340,10 +381,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             new GoogleMap.OnMapLongClickListener() {
                 @Override
                 public void onMapLongClick(LatLng latLng) {
-                    mMap.addMarker(new MarkerOptions()
-                            .position(latLng)
-                            .title("You are here")
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
+                    String[] contactType = {"CATCH", "CONTACT", "FOLLOW"};
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Choose an Action")
+                            .setItems(contactType, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    switch (which) {
+                                        case 0:
+                                            addPoint("CATCH");
+                                        case 1:
+                                            addPoint("CONTACT");
+                                        case 2:
+                                            addPoint("FOLLOW");
+                                    }
+                                }
+                            }).show();
                 }
             };
 
@@ -351,14 +405,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             new GoogleMap.OnMyLocationClickListener() {
                 @Override
                 public void onMyLocationClick(@NonNull Location location) {
-                    Toast.makeText(getApplicationContext(), "MyLocationClicked " + mMap.isMyLocationEnabled(), Toast.LENGTH_LONG).show();
                     LatLng coordinate = new LatLng(location.getLatitude(),
                             location.getLongitude());
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(coordinate, 15));
-                    if (mMap.isMyLocationEnabled())
-                        mMap.setMyLocationEnabled(false);
-                    else
-                        mMap.setMyLocationEnabled(true);
                 }
             };
 }
