@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:2418689332464152149",
-      "lastPropertyId": "4:4733388621595738755",
+      "lastPropertyId": "6:9098402651894989148",
       "name": "Point",
       "properties": [
         {
@@ -23,6 +23,14 @@
         {
           "id": "4:4733388621595738755",
           "name": "lat"
+        },
+        {
+          "id": "5:4385265763250773486",
+          "name": "timeStamp"
+        },
+        {
+          "id": "6:9098402651894989148",
+          "name": "contactType"
         }
       ],
       "relations": []

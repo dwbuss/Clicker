@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Service;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,6 +14,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -24,6 +26,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -36,8 +39,18 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.clicker.objectbo.Point;
 import com.example.clicker.objectbo.PointListAdapter;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.TileOverlayOptions;
+import com.google.android.gms.maps.model.TileProvider;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -46,7 +59,7 @@ import java.util.List;
 import io.objectbox.Box;
 import io.objectbox.BoxStore;
 
-public class MainActivity extends AppCompatActivity implements LocationListener {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     private final static int ALL_PERMISSIONS_RESULT = 101;
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
@@ -56,10 +69,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private PointListAdapter pointListAdapter;
     private Button fabAddPoint;
 
-    LocationManager locationManager;
-    Location loc;
-
     ArrayList<String> permissionsRejected = new ArrayList<>();
+    SupportMapFragment mapFragment;
+    private GoogleMap mMap;
 
     @Override
     protected void onResume() {
@@ -73,23 +85,67 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
 
         ArrayList<String> permissions = new ArrayList<>();
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
 
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Toast.makeText(this, "GPS is not enabled", Toast.LENGTH_LONG).show();
-        } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(permissions.toArray(new String[permissions.size()]),
-                        ALL_PERMISSIONS_RESULT);
-            } else {
-                getLocation();
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkPermission()) {
+            requestPermissions(permissions.toArray(new String[permissions.size()]),
+                    ALL_PERMISSIONS_RESULT);
         }
+
+        mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+        ((LocationManager) this.getSystemService(Context.LOCATION_SERVICE))
+                .requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                        1000,
+                        3,
+                        locationListenerGPS);
         initView();
     }
+
+    private boolean checkPermission() {
+        int result1 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
+        int result2 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION);
+        return (result1 == PackageManager.PERMISSION_GRANTED && result2 == PackageManager.PERMISSION_GRANTED);
+    }
+
+    LocationListener locationListenerGPS = new LocationListener() {
+        @Override
+        public void onLocationChanged(android.location.Location location) {
+            LatLng coordinate = new LatLng(location.getLatitude(),
+                    location.getLongitude());
+            android.graphics.Point mappoint = mMap.getProjection().toScreenLocation(coordinate);
+            mappoint.set(mappoint.x, mappoint.y - 300); // change these values as you need , just hard coded a value if you want you can give it based on a ratio like using DisplayMetrics  as well
+            mMap.animateCamera(CameraUpdateFactory.newLatLng(mMap.getProjection().fromScreenLocation(mappoint)));
+            if (location.hasBearing() && !mMap.isMyLocationEnabled()) {
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(coordinate)             // Sets the center of the map to current location
+                        .bearing(location.getBearing())// Sets the orientation of the camera to east
+                        .zoom(mMap.getCameraPosition().zoom)
+                        .tilt(0)// Sets the tilt of the camera to 0 degrees
+                        .build();                   // Creates a CameraPosition from the builder
+                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+            }
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+
+        }
+    };
 
     public void initView() {
         pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
@@ -100,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         llm2.setOrientation(LinearLayoutManager.VERTICAL);
         rvPointList.setLayoutManager(llm2);
         rvPointList.setAdapter(pointListAdapter);
-        fabAddPoint = (Button) findViewById(R.id.clickBtn);
+        fabAddPoint = (Button) findViewById(R.id.catchBtn);
         /*fabAddPoint.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -110,9 +166,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
 
-        ((TextView)findViewById(R.id.daily)).setText(Integer.toString(pointBox.getAll().size()));
-        ((TextView)findViewById(R.id.weekly)).setText(Integer.toString(pointBox.getAll().size()));
-        ((TextView)findViewById(R.id.total)).setText(Integer.toString(pointBox.getAll().size()));
     }
 
     @Override
@@ -137,11 +190,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         inflater.inflate(R.menu.clicker_menu, menu);
         return true;
     }
-
-    public void showLocation(View view) {
-        Toast.makeText(this, "Location " + loc.getLongitude() + ":" + loc.getLatitude(), Toast.LENGTH_LONG).show();
-    }
-
+/*
     public void showSolunar(View view) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyymmdd");
         String url = "https://api.solunar.org/solunar/" + loc.getLatitude() + "," + loc.getLongitude() + "," + simpleDateFormat.format(Calendar.getInstance().getTime()) + ",-4";
@@ -151,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public void showWeather(View view) {
         String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + loc.getLatitude() + "," + loc.getLongitude();
         callApi(url);
-    }
+    }*/
 
     public void callApi(String url) {
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -169,28 +218,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         });
         queue.add(stringRequest);
     }
-
+/*
 
     public void addCount(View view) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String username = prefs.getString("Username", null);
         pointListAdapter.addOrUpdatePoint(new Point(0, username, loc.getLongitude(),loc.getLatitude() ));
         pointListAdapter.updatePoints();
-        bump(R.id.total);
-        bump(R.id.weekly);
 
-        TextView totalView = (TextView) findViewById(R.id.daily);
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
 
-        totalView.setText(Integer.toString(pointBox.getAll().size()));
-    }
-
-    public void bump(int id) {
-        TextView totalView = (TextView) findViewById(id);
-        Integer total = Integer.parseInt(totalView.getText().toString());
-        total++;
-        totalView.setText(total.toString());
     }
 
     private void getLocation() {
@@ -203,6 +241,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             e.printStackTrace();
         }
     }
+*/
 
     @TargetApi(Build.VERSION_CODES.M)
     @Override
@@ -233,7 +272,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         }
                     }
                 } else {
-                    getLocation();
+                    //                   getLocation();
                 }
                 break;
         }
@@ -248,14 +287,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 .show();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (locationManager != null) {
-            locationManager.removeUpdates(this);
-        }
-    }
-
     private boolean hasPermission(String permission) {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -265,19 +296,69 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         return true;
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
+    public void addContact(View view) {
+    }
+
+    public void addFollow(View view) {
+    }
+
+    public void addCatch(View view) {
     }
 
     @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        File sdcard = new File("/mnt/sdcard/");
+        File file = new File(sdcard, "Crow.mbtiles");
+
+        if (!file.exists())
+            Toast.makeText(this, "File not Found" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+
+        LatLng crow = new LatLng(49.217314, -93.863248);
+        mMap.addMarker(new MarkerOptions().position(crow).title("Marker in Crow"));
+
+        TileProvider tileProvider = new ExpandedMBTilesTileProvider(file, 256, 256);
+        mMap.addTileOverlay(new TileOverlayOptions().tileProvider(tileProvider));
+       /* try {
+            new KmlLayer(mMap, R.raw.points, getApplicationContext()).addLayerToMap();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }*/
+        mMap.setMyLocationEnabled(true);
+        mMap.getUiSettings().setAllGesturesEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setZoomGesturesEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        mMap.getUiSettings().setCompassEnabled(true);
+        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 12.0));
+        mMap.setOnMyLocationClickListener(onMyLocationClickListener);
+        mMap.setOnMapLongClickListener(onMyMapLongClickListener);
     }
 
-    @Override
-    public void onProviderEnabled(String provider) {
-    }
+    private GoogleMap.OnMapLongClickListener onMyMapLongClickListener =
+            new GoogleMap.OnMapLongClickListener() {
+                @Override
+                public void onMapLongClick(LatLng latLng) {
+                    mMap.addMarker(new MarkerOptions()
+                            .position(latLng)
+                            .title("You are here")
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+                }
+            };
 
-    @Override
-    public void onProviderDisabled(String provider) {
-    }
+    private GoogleMap.OnMyLocationClickListener onMyLocationClickListener =
+            new GoogleMap.OnMyLocationClickListener() {
+                @Override
+                public void onMyLocationClick(@NonNull Location location) {
+                    Toast.makeText(getApplicationContext(), "MyLocationClicked " + mMap.isMyLocationEnabled(), Toast.LENGTH_LONG).show();
+                    LatLng coordinate = new LatLng(location.getLatitude(),
+                            location.getLongitude());
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(coordinate, 15));
+                    if (mMap.isMyLocationEnabled())
+                        mMap.setMyLocationEnabled(false);
+                    else
+                        mMap.setMyLocationEnabled(true);
+                }
+            };
 }

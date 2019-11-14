@@ -1,5 +1,8 @@
 package com.example.clicker.objectbo;
 
+import java.util.Calendar;
+import java.util.Date;
+
 import io.objectbox.annotation.Entity;
 import io.objectbox.annotation.Id;
 
@@ -10,15 +13,19 @@ public class Point {
     private String name;
     private double lon;
     private double lat;
+    private Date timeStamp;
+    private String contactType;
 
     public Point() {
     }
 
-    public Point(long id, String name, double lon, double lat) {
+    public Point(long id, String name, String contactType, double lon, double lat) {
         this.id = id;
         this.name = name;
+        this.timeStamp = Calendar.getInstance().getTime();
         this.lat = lat;
         this.lon = lon;
+        this.contactType = contactType;
     }
 
     public long getId() {
@@ -28,7 +35,6 @@ public class Point {
     public void setId(long id) {
         this.id = id;
     }
-
     public String getName() {
         return name;
     }
@@ -41,16 +47,14 @@ public class Point {
         return lon;
     }
 
-    public void setLon(double lon) {
-        this.lon = lon;
+    public Date getTimeStamp() {
+        return timeStamp;
     }
 
     public double getLat() {
         return lat;
     }
 
-    public void setLat(double lat) {
-        this.lat = lat;
-    }
+    public String getContactType(){return contactType;}
 
 }

@@ -143,11 +143,11 @@ public class PointListAdapter extends RecyclerView.Adapter<PointListAdapter.Poin
                             Toast.makeText(context, "Name and Jersey number can not be empty.", Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        addOrUpdatePoint(new Point(0, etPointName.getText().toString().trim(), 0.0, 0.0));
+                        addOrUpdatePoint(new Point(0, etPointName.getText().toString().trim(), "", 0.0, 0.0));
                         updatePoints();
                         break;
                     case MODE_EDIT:
-                        addOrUpdatePoint(new Point(id, etPointName.getText().toString().trim(), 0.0, 0.0));
+                        addOrUpdatePoint(new Point(id, etPointName.getText().toString().trim(), "", 0.0, 0.0));
                         updatePoints();
                         break;
                     case MODE_DELETE:
