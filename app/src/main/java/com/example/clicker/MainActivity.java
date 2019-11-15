@@ -1,7 +1,6 @@
 package com.example.clicker;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -28,8 +27,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -99,8 +96,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     ALL_PERMISSIONS_RESULT);
         }
 
-        mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         locationManager = ((LocationManager) this.getSystemService(Context.LOCATION_SERVICE));
         getLocation();
@@ -173,8 +169,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 startActivity(settings);
                 return true;
             case R.id.about:
-                Intent about = new Intent(this, AboutActivity.class);
-                startActivity(about);
+                Intent forecast = new Intent(this, ForecastActivity.class);
+                forecast.putExtra("LOCATION", getLocation());
+                startActivity(forecast);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -187,35 +184,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         inflater.inflate(R.menu.clicker_menu, menu);
         return true;
     }
-/*
-    public void showSolunar(View view) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyymmdd");
-        String url = "https://api.solunar.org/solunar/" + loc.getLatitude() + "," + loc.getLongitude() + "," + simpleDateFormat.format(Calendar.getInstance().getTime()) + ",-4";
-        callApi(url);
-    }
-
-    public void showWeather(View view) {
-        String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + loc.getLatitude() + "," + loc.getLongitude();
-        callApi(url);
-    }*/
-
-    public void callApi(String url) {
-        RequestQueue queue = Volley.newRequestQueue(this);
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        Toast.makeText(getApplicationContext(), response.substring(0, 1000), Toast.LENGTH_LONG).show();
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText(getApplicationContext(), "That didn't work!", Toast.LENGTH_LONG).show();
-            }
-        });
-        queue.add(stringRequest);
-    }
-
 
     private boolean checkPermission() {
         int result1 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
@@ -275,7 +243,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .position(new LatLng(point.getLat(), point.getLon()))
                     .title(point.getName() + point.getContactType())
                     .icon(BitmapDescriptorFactory.defaultMarker(colors.get(point.getContactType()))));
-
     }
 
     private Location getLocation() {
