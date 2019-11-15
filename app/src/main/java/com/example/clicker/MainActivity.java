@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -62,11 +63,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private final static int ALL_PERMISSIONS_RESULT = 101;
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
     private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1;
-    private RecyclerView rvPointList;
+    //  private RecyclerView rvPointList;
     private List<Point> pointList = new ArrayList<>();
     private PointListAdapter pointListAdapter;
-    private Button fabAddPoint;
     private Map<String, Float> colors;
+    private boolean follow = false;
+
+    private boolean northUp = false;
 
     ArrayList<String> permissionsRejected = new ArrayList<>();
     SupportMapFragment mapFragment;
@@ -115,18 +118,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     LocationListener locationListenerGPS = new LocationListener() {
         @Override
         public void onLocationChanged(android.location.Location location) {
-            LatLng coordinate = new LatLng(location.getLatitude(),
-                    location.getLongitude());
-            android.graphics.Point mappoint = mMap.getProjection().toScreenLocation(coordinate);
-            //   mappoint.set(mappoint.x, mappoint.y - 300); // change these values as you need , just hard coded a value if you want you can give it based on a ratio like using DisplayMetrics  as well
-            mMap.animateCamera(CameraUpdateFactory.newLatLng(mMap.getProjection().fromScreenLocation(mappoint)));
-            if (location.hasBearing() && !mMap.isMyLocationEnabled()) {
+            if (follow) {
+                LatLng coordinate = new LatLng(location.getLatitude(), location.getLongitude());
                 CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(coordinate)             // Sets the center of the map to current location
-                        .bearing(location.getBearing())// Sets the orientation of the camera to east
+                        .target(coordinate)
+                        .bearing(location.getBearing())
                         .zoom(mMap.getCameraPosition().zoom)
-                        .tilt(0)// Sets the tilt of the camera to 0 degrees
-                        .build();                   // Creates a CameraPosition from the builder
+                        .build();
+                if (northUp)
+                    cameraPosition = new CameraPosition.Builder()
+                            .target(coordinate)
+                            .zoom(mMap.getCameraPosition().zoom)
+                            .build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
             }
         }
@@ -150,26 +153,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void initView() {
         pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
         pointListAdapter.updatePoints();
-        rvPointList = (RecyclerView) findViewById(R.id.rvPointList);
-        rvPointList.setHasFixedSize(true);
-        LinearLayoutManager llm2 = new LinearLayoutManager(MainActivity.this);
-        llm2.setOrientation(LinearLayoutManager.VERTICAL);
-        rvPointList.setLayoutManager(llm2);
-        rvPointList.setAdapter(pointListAdapter);
-        fabAddPoint = (Button) findViewById(R.id.catchBtn);
-        /*fabAddPoint.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                pointListAdapter.showAddEditDialog(PointListAdapter.MODE_ADD, 0);
-            }
-        });*/
         refreshCounts();
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
-
-        List<Point> points = pointBox.getAll();
-        for (Point p : points) {
-            addPointMarker(p);
+        if (mMap != null) {
+            mMap.clear();
+            List<Point> points = pointBox.getAll();
+            for (Point p : points) {
+                addPointMarker(p);
+            }
         }
     }
 
@@ -231,19 +223,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
         queue.add(stringRequest);
     }
-/*
-
-    public void addCount(View view) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        String username = prefs.getString("Username", null);
-        pointListAdapter.addOrUpdatePoint(new Point(0, username, loc.getLongitude(),loc.getLatitude() ));
-        pointListAdapter.updatePoints();
-
-        BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
-        Box<Point> pointBox = boxStore.boxFor(Point.class);
-
-    }
-*/
 
     @TargetApi(Build.VERSION_CODES.M)
     @Override
@@ -297,40 +276,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void addContact(View view) {
-        addPoint("CONTACT");
-        refreshCounts();
+        addPoint("CONTACT", getLocation());
     }
 
     public void addFollow(View view) {
-        addPoint("FOLLOW");
-        refreshCounts();
+        addPoint("FOLLOW", getLocation());
     }
 
     public void addCatch(View view) {
-        addPoint("CATCH");
-        refreshCounts();
+        addPoint("CATCH", getLocation());
     }
 
-    public void addPoint(String contactType) {
+    public void addPoint(String contactType, Location loc) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String username = prefs.getString("Username", null);
-        Location loc = getLocation();
         Point point = new Point(0, username, contactType, loc.getLongitude(), loc.getLatitude());
         pointListAdapter.addOrUpdatePoint(point);
         pointListAdapter.updatePoints();
         addPointMarker(point);
+        refreshCounts();
     }
 
     private void addPointMarker(Point point) {
-        try {
+        if (mMap != null)
             mMap.addMarker(new MarkerOptions()
-                    .position(new LatLng(point.getLat(),
-                            point.getLon()))
+                    .position(new LatLng(point.getLat(), point.getLon()))
                     .title(point.getName() + point.getContactType())
                     .icon(BitmapDescriptorFactory.defaultMarker(colors.get(point.getContactType()))));
-        } catch (Exception e) {
-            System.err.println("Failed to add " + point.getName() + point.getContactType() + point.getLon() + point.getLat());
-        }
+
     }
 
     private Location getLocation() {
@@ -354,7 +327,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (!file.exists())
             Toast.makeText(this, "File not Found" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-
         LatLng crow = new LatLng(49.217314, -93.863248);
         mMap.addMarker(new MarkerOptions().position(crow).title("Marker in Crow"));
 
@@ -373,14 +345,48 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 12.0));
-        mMap.setOnMyLocationClickListener(onMyLocationClickListener);
+        mMap.setOnMyLocationButtonClickListener(onMyLocationButtonClickListener);
         mMap.setOnMapLongClickListener(onMyMapLongClickListener);
+        mMap.setOnCameraMoveStartedListener(onCameraMoveStartedListener);
     }
+
+    private GoogleMap.OnMyLocationButtonClickListener onMyLocationButtonClickListener =
+            new GoogleMap.OnMyLocationButtonClickListener() {
+                @Override
+                public boolean onMyLocationButtonClick() {
+                    if ((follow && northUp) || !follow) {
+                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                        View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
+                        mMyLocationButtonView.setBackgroundColor(Color.RED);
+                        northUp = false;
+                        follow = true;
+                    } else if (follow) {
+                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                        View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
+                        mMyLocationButtonView.setBackgroundColor(Color.GREEN);
+                        northUp = true;
+                    }
+                    return false;
+                }
+            };
+
+    private GoogleMap.OnCameraMoveStartedListener onCameraMoveStartedListener = (new GoogleMap.OnCameraMoveStartedListener() {
+        @Override
+        public void onCameraMoveStarted(int reason) {
+            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                follow = false;
+                northUp = true;
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
+                mMyLocationButtonView.setBackgroundColor(Color.GRAY);
+            }
+        }
+    });
 
     private GoogleMap.OnMapLongClickListener onMyMapLongClickListener =
             new GoogleMap.OnMapLongClickListener() {
                 @Override
-                public void onMapLongClick(LatLng latLng) {
+                public void onMapLongClick(final LatLng latLng) {
 
                     String[] contactType = {"CATCH", "CONTACT", "FOLLOW"};
                     new AlertDialog.Builder(MainActivity.this)
@@ -388,26 +394,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             .setItems(contactType, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    switch (which) {
-                                        case 0:
-                                            addPoint("CATCH");
-                                        case 1:
-                                            addPoint("CONTACT");
-                                        case 2:
-                                            addPoint("FOLLOW");
-                                    }
+                                    Location loc = new Location(LocationManager.GPS_PROVIDER);
+                                    loc.setLongitude(latLng.longitude);
+                                    loc.setLatitude(latLng.latitude);
+                                    if (which == 0)
+                                        addPoint("CATCH", loc);
+                                    if (which == 1)
+                                        addPoint("CONTACT", loc);
+                                    if (which == 2)
+                                        addPoint("FOLLOW", loc);
+
                                 }
                             }).show();
-                }
-            };
-
-    private GoogleMap.OnMyLocationClickListener onMyLocationClickListener =
-            new GoogleMap.OnMyLocationClickListener() {
-                @Override
-                public void onMyLocationClick(@NonNull Location location) {
-                    LatLng coordinate = new LatLng(location.getLatitude(),
-                            location.getLongitude());
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(coordinate, 15));
                 }
             };
 }

@@ -11,16 +11,6 @@
         android:id="@+id/toolbar"
         layout="@layout/toolbar" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvPointList"
-        android:layout_width="wrap_content"
-        android:layout_height="141dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar">
-
-    </androidx.recyclerview.widget.RecyclerView>
-
     <include
         layout="@layout/map_main"
         android:layout_width="0dp"
@@ -28,7 +18,7 @@
         app:layout_constraintBottom_toTopOf="@+id/tableLayout3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/rvPointList" />
+        app:layout_constraintTop_toBottomOf="@+id/toolbar" />
 
     <TableLayout
         android:id="@+id/tableLayout3"
