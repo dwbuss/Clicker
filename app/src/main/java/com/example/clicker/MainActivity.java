@@ -1,7 +1,9 @@
 package com.example.clicker;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,11 +21,13 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
@@ -34,10 +38,12 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
@@ -226,12 +232,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void addPointMarker(Point point) {
-        if (mMap != null)
-            mMap.addMarker(new MarkerOptions()
+        if (mMap != null) {
+            Marker m = mMap.addMarker(new MarkerOptions()
                     .position(new LatLng(point.getLat(), point.getLon()))
                     .title(new SimpleDateFormat("MM-dd-yyyy h:mm a").format(point.getTimeStamp()))
                     .draggable(true)
                     .icon(getMarker(point.getContactType())));
+            m.setTag(point);
+        }
     }
 
     private BitmapDescriptor getMarker(String contactType) {
@@ -269,18 +277,105 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.getUiSettings().setZoomGesturesEnabled(true);
         mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 12.0));
         mMap.setOnMyLocationButtonClickListener(onMyLocationButtonClickListener);
         mMap.setOnMapLongClickListener(onMyMapLongClickListener);
         mMap.setOnCameraMoveStartedListener(onCameraMoveStartedListener);
+        mMap.setOnInfoWindowLongClickListener(onInfoWindowLongClickListener);
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
         List<Point> points = pointBox.getAll();
         for (Point p : points) {
             addPointMarker(p);
         }
+    }
+
+    private GoogleMap.OnInfoWindowLongClickListener onInfoWindowLongClickListener = new GoogleMap.OnInfoWindowLongClickListener() {
+        @Override
+        public void onInfoWindowLongClick(final Marker marker) {
+            final Point point = (Point) marker.getTag();
+            final CharSequence[] items = {"Update", "Delete"};
+            AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+
+            dialog.setTitle("Choose an action");
+            dialog.setItems(items, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    if (i == 0) {
+                        showDialogUpdate(point);
+                    }
+                    if (i == 1) {
+                        showDialogDelete(point, marker);
+                    }
+                }
+            });
+            dialog.show();
+        }
+    };
+
+    private void showDialogUpdate(final Point point) {
+        final Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.update_dialog);
+        dialog.setTitle("Update");
+
+        final EditText edtName = dialog.findViewById(R.id.edtName);
+        final EditText edtContactType = dialog.findViewById(R.id.contactType);
+        final EditText edtdateTime = dialog.findViewById(R.id.dateTime);
+        Button btnUpdate = dialog.findViewById(R.id.btnUpdate);
+        edtName.setText(point.getName());
+        edtContactType.setText(point.getContactType());
+        edtdateTime.setText(point.getTimeStamp().toString());
+        int width = (int) (this.getResources().getDisplayMetrics().widthPixels * 0.95);
+        int height = (int) (this.getResources().getDisplayMetrics().heightPixels * 0.7);
+        dialog.getWindow().setLayout(width, height);
+        dialog.show();
+
+        btnUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    point.setName(edtName.getText().toString().trim());
+                    BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
+                    Box<Point> pointBox = boxStore.boxFor(Point.class);
+                    pointBox.put(point);
+                    dialog.dismiss();
+                    Toast.makeText(getApplicationContext(), "Update Successfull", Toast.LENGTH_SHORT).show();
+                } catch (Exception error) {
+                    Log.e("Update error", error.getMessage());
+                }
+            }
+        });
+    }
+
+    private void showDialogDelete(final Point point, final Marker marker) {
+        AlertDialog.Builder dialogDelete = new AlertDialog.Builder(MainActivity.this);
+        dialogDelete.setTitle("Warning!!");
+        dialogDelete.setMessage("Are you sure to delete?");
+        dialogDelete.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                try {
+                    BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
+                    Box<Point> pointBox = boxStore.boxFor(Point.class);
+                    pointBox.remove(point);
+                    marker.remove();
+                    refreshCounts();
+                    Toast.makeText(MainActivity.this, "Delete successfully", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Log.e("error", e.getMessage());
+                }
+            }
+        });
+        dialogDelete.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.dismiss();
+            }
+        });
+        dialogDelete.show();
     }
 
     private GoogleMap.OnMyLocationButtonClickListener onMyLocationButtonClickListener =
