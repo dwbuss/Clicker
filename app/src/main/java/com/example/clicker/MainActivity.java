@@ -24,16 +24,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.example.clicker.objectbo.Point;
 import com.example.clicker.objectbo.PointListAdapter;
 import com.example.clicker.objectbo.Point_;
@@ -41,6 +34,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -49,6 +43,7 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,18 +82,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
         ArrayList<String> permissions = new ArrayList<>();
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        permissions.add(Manifest.permission.INTERNET);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkPermission()) {
-            requestPermissions(permissions.toArray(new String[permissions.size()]),
-                    ALL_PERMISSIONS_RESULT);
+            requestPermissions(permissions.toArray(new String[permissions.size()]), ALL_PERMISSIONS_RESULT);
         }
 
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         locationManager = ((LocationManager) this.getSystemService(Context.LOCATION_SERVICE));
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000,
+                3,
+                locationListenerGPS);
         getLocation();
         initView();
     }
@@ -188,18 +186,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean checkPermission() {
         int result1 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
         int result2 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION);
-        return (result1 == PackageManager.PERMISSION_GRANTED && result2 == PackageManager.PERMISSION_GRANTED);
-    }
-
-    private void requestPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.READ_EXTERNAL_STORAGE) &&
-                ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION)) {
-            Toast.makeText(this, "Write External Storage permission allows us to read  files." +
-                    "Please allow this permission in App Settings.", Toast.LENGTH_LONG).show();
-        } else {
-            ActivityCompat.requestPermissions(this, new String[]
-                    {android.Manifest.permission.READ_EXTERNAL_STORAGE, android.Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_CODE);
-        }
+        int result3 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET);
+        return (result1 == PackageManager.PERMISSION_GRANTED && result2 == PackageManager.PERMISSION_GRANTED && result3 == PackageManager.PERMISSION_GRANTED);
     }
 
     @Override
@@ -241,16 +229,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (mMap != null)
             mMap.addMarker(new MarkerOptions()
                     .position(new LatLng(point.getLat(), point.getLon()))
-                    .title(point.getName() + point.getContactType())
-                    .icon(BitmapDescriptorFactory.defaultMarker(colors.get(point.getContactType()))));
+                    .title(new SimpleDateFormat("MM-dd-yyyy h:mm a").format(point.getTimeStamp()))
+                    .draggable(true)
+                    .icon(getMarker(point.getContactType())));
+    }
+
+    private BitmapDescriptor getMarker(String contactType) {
+        if (contactType.equals("CATCH"))
+            return BitmapDescriptorFactory.fromResource(R.drawable.ic_catch);
+        else if (contactType.equals("CONTACT"))
+            return BitmapDescriptorFactory.fromResource(R.drawable.ic_contact);
+        return BitmapDescriptorFactory.fromResource(R.drawable.ic_follow);
     }
 
     private Location getLocation() {
         try {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                    1000,
-                    3,
-                    locationListenerGPS);
             return locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         } catch (SecurityException e) {
             e.printStackTrace();

@@ -19,14 +19,18 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 
 public class ForecastActivity extends AppCompatActivity {
     private Button homeBtn;
     private Location loc;
     private Calendar cal;
+    private String offset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,26 +44,30 @@ public class ForecastActivity extends AppCompatActivity {
             }
         });
         loc = (Location) getIntent().getExtras().get("LOCATION");
-        cal = Calendar.getInstance();
+
+        TimeZone tz = TimeZone.getDefault();
+        cal = GregorianCalendar.getInstance(tz);
+
+        int offsetInMillis = tz.getOffset(cal.getTimeInMillis());
+
+        offset = String.format("%02d:%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
+        offset = (offsetInMillis >= 0 ? "+" : "-") + Integer.parseInt(offset.split(":")[0]);
+
         setDate();
     }
 
     private void setDate() {
-        String pattern = "MM-dd-yyyy h:mm a";
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM-dd-yyyy h:mm a");
         ((TextView) findViewById(R.id.dateView)).setText(simpleDateFormat.format(cal.getTime()));
         showSolunar();
         showWeather();
     }
 
-
     public void showSolunar() {
-        /*
-        {"sunRise":"8:21","sunTransit":"13:50","sunSet":"19:20","moonRise":"14:44","moonTransit":"21:23","moonUnder":"9:53","moonSet":"5:02","moonPhase":"Waxing Gibbous","moonIllumination":0.805872890974292,"sunRiseDec":8.35,"sunTransitDec":13.833333333333334,"sunSetDec":19.333333333333332,"moonRiseDec":14.733333333333333,"moonSetDec":5.033333333333333,"moonTransitDec":21.383333333333333,"moonUnderDec":9.883333333333333,"minor1StartDec":14.233333333333333,"minor1Start":"14:14","minor1StopDec":15.233333333333333,"minor1Stop":"15:14","minor2StartDec":4.533333333333333,"minor2Start":"04:32","minor2StopDec":5.533333333333333,"minor2Stop":"05:32","major1StartDec":20.383333333333333,"major1Start":"20:23","major1StopDec":22.383333333333333,"major1Stop":"22:23","major2StartDec":8.883333333333333,"major2Start":"08:53","major2StopDec":10.883333333333333,"major2Stop":"10:53","dayRating":0,"hourlyRating":{"0":0,"1":0,"2":0,"3":0,"4":0,"5":20,"6":20,"7":0,"8":40,"9":40,"10":20,"11":20,"12":0,"13":0,"14":20,"15":20,"16":0,"17":0,"18":0,"19":20,"20":40,"21":20,"22":20,"23":20}}
-         */
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyymmdd");
-        String url = "https://api.solunar.org/solunar/" + loc.getLatitude() + "," + loc.getLongitude() + "," + simpleDateFormat.format(cal.getTime()) + ",-4";
+        String url = "https://api.solunar.org/solunar/" + loc.getLatitude() + "," + loc.getLongitude() + "," + simpleDateFormat.format(cal.getTime()) + "," + offset;
         RequestQueue queue = Volley.newRequestQueue(this);
+        final String finalOffset = offset;
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -67,14 +75,26 @@ public class ForecastActivity extends AppCompatActivity {
                         try {
                             JSONObject reader = new JSONObject(response);
 
-                            ((TextView) findViewById(R.id.sunRise)).setText(reader.getString("sunRise"));
-                            ((TextView) findViewById(R.id.sunSet)).setText(reader.getString("sunSet"));
-                            ((TextView) findViewById(R.id.moonRise)).setText(reader.getString("moonRise"));
-                            ((TextView) findViewById(R.id.moonTransit)).setText(reader.getString("moonTransit"));
-                            ((TextView) findViewById(R.id.moonUnder)).setText(reader.getString("moonUnder"));
-                            ((TextView) findViewById(R.id.moonSet)).setText(reader.getString("moonSet"));
+                            ((TextView) findViewById(R.id.lon)).setText(Double.toString(loc.getLongitude()));
+                            ((TextView) findViewById(R.id.lat)).setText(Double.toString(loc.getLatitude()));
+                            ((TextView) findViewById(R.id.offset)).setText(finalOffset);
+                            ((TextView) findViewById(R.id.sunRise)).setText(parseTime(reader.getString("sunRise")));
+                            ((TextView) findViewById(R.id.sunSet)).setText(parseTime(reader.getString("sunSet")));
+                            ((TextView) findViewById(R.id.moonRise)).setText(parseTime(reader.getString("moonRise")));
+                            ((TextView) findViewById(R.id.moonTransit)).setText(parseTime(reader.getString("moonTransit")));
+                            ((TextView) findViewById(R.id.moonUnder)).setText(parseTime(reader.getString("moonUnder")));
+                            ((TextView) findViewById(R.id.moonSet)).setText(parseTime(reader.getString("moonSet")));
                             ((TextView) findViewById(R.id.moonPhase)).setText(reader.getString("moonPhase"));
-                        } catch (JSONException e) {
+                            ((TextView) findViewById(R.id.minor)).setText(parse(reader.getString("minor1Start"),
+                                    reader.getString("minor1Stop"),
+                                    reader.getString("minor2Start"),
+                                    reader.getString("minor2Stop")));
+                            ((TextView) findViewById(R.id.major)).setText(parse(reader.getString("major1Start"),
+                                    reader.getString("major1Stop"),
+                                    reader.getString("major2Start"),
+                                    reader.getString("major2Stop")));
+
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -87,6 +107,17 @@ public class ForecastActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    private String parse(String aStart, String aStop, String bStart, String bStop) throws ParseException {
+        return parseTime(aStart) + " - " + parseTime(aStop) + "    " + parseTime(bStart) + " - " + parseTime(bStop);
+    }
+
+    String parseTime(String time) throws ParseException {
+        final SimpleDateFormat sdf = new SimpleDateFormat("H:mm");
+        final Date dateObj = sdf.parse(time);
+        return new SimpleDateFormat("h:mm a").format(dateObj);
+
+    }
+
     public void showWeather() {
         String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + loc.getLatitude() + "," + loc.getLongitude();
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -96,13 +127,13 @@ public class ForecastActivity extends AppCompatActivity {
                     public void onResponse(String response) {
                         try {
                             JSONObject reader = new JSONObject(response);
-                            JSONObject main  = reader.getJSONObject("currently");
+                            JSONObject main = reader.getJSONObject("currently");
                             ((TextView) findViewById(R.id.temperature)).setText(main.getString("temperature"));
                             ((TextView) findViewById(R.id.dewPoint)).setText(main.getString("dewPoint"));
                             ((TextView) findViewById(R.id.windSpeed)).setText(main.getString("windSpeed"));
                             ((TextView) findViewById(R.id.pressure)).setText(main.getString("pressure"));
 
-                            JSONObject main1  = reader.getJSONObject("daily");
+                            JSONObject main1 = reader.getJSONObject("daily");
                             ((TextView) findViewById(R.id.summary)).setText(main1.getString("summary"));
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -116,7 +147,6 @@ public class ForecastActivity extends AppCompatActivity {
         });
         queue.add(stringRequest);
     }
-
 
 
     public void nextDay(View view) {
