@@ -1,13 +1,13 @@
 package com.example.clicker;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.location.Location;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -18,8 +18,10 @@ import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.shredzone.commons.suncalc.MoonPosition;
+import org.shredzone.commons.suncalc.MoonTimes;
+import org.shredzone.commons.suncalc.SunTimes;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -52,7 +54,6 @@ public class ForecastActivity extends AppCompatActivity {
 
         offset = String.format("%02d:%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
         offset = (offsetInMillis >= 0 ? "+" : "-") + Integer.parseInt(offset.split(":")[0]);
-
         setDate();
     }
 
@@ -64,58 +65,96 @@ public class ForecastActivity extends AppCompatActivity {
     }
 
     public void showSolunar() {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyymmdd");
-        String url = "https://api.solunar.org/solunar/" + loc.getLatitude() + "," + loc.getLongitude() + "," + simpleDateFormat.format(cal.getTime()) + "," + offset;
-        RequestQueue queue = Volley.newRequestQueue(this);
-        final String finalOffset = offset;
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject reader = new JSONObject(response);
+        Calendar startOfDay = Calendar.getInstance();
+        startOfDay.setTime(cal.getTime());
+        startOfDay.set(Calendar.HOUR_OF_DAY, 0);
+        startOfDay.set(Calendar.MINUTE, 0);
+        startOfDay.set(Calendar.SECOND, 0);
+        startOfDay.set(Calendar.MILLISECOND, 0);
 
-                            ((TextView) findViewById(R.id.lon)).setText(Double.toString(loc.getLongitude()));
-                            ((TextView) findViewById(R.id.lat)).setText(Double.toString(loc.getLatitude()));
-                            ((TextView) findViewById(R.id.offset)).setText(finalOffset);
-                            ((TextView) findViewById(R.id.sunRise)).setText(parseTime(reader.getString("sunRise")));
-                            ((TextView) findViewById(R.id.sunSet)).setText(parseTime(reader.getString("sunSet")));
-                            ((TextView) findViewById(R.id.moonRise)).setText(parseTime(reader.getString("moonRise")));
-                            ((TextView) findViewById(R.id.moonTransit)).setText(parseTime(reader.getString("moonTransit")));
-                            ((TextView) findViewById(R.id.moonUnder)).setText(parseTime(reader.getString("moonUnder")));
-                            ((TextView) findViewById(R.id.moonSet)).setText(parseTime(reader.getString("moonSet")));
-                            ((TextView) findViewById(R.id.moonPhase)).setText(reader.getString("moonPhase"));
-                            ((TextView) findViewById(R.id.minor)).setText(parse(reader.getString("minor1Start"),
-                                    reader.getString("minor1Stop"),
-                                    reader.getString("minor2Start"),
-                                    reader.getString("minor2Stop")));
-                            ((TextView) findViewById(R.id.major)).setText(parse(reader.getString("major1Start"),
-                                    reader.getString("major1Stop"),
-                                    reader.getString("major2Start"),
-                                    reader.getString("major2Stop")));
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Toast.makeText(getApplicationContext(), "That didn't work!", Toast.LENGTH_LONG).show();
+        SunTimes times = SunTimes.compute()
+                .on(startOfDay)
+                .fullCycle()
+                .at(loc.getLatitude(), loc.getLongitude())
+                .execute();
+        MoonTimes moon = MoonTimes.compute()
+                .on(startOfDay)
+                .fullCycle()
+                .oneDay()
+                .at(loc.getLatitude(), loc.getLongitude())
+                .execute();
+        MoonPosition moonp;
+        double prev = 0;
+        boolean increasing = false;
+        boolean decreasing = false;
+        Date moonOverHead = startOfDay.getTime();
+        Date moonUnderFoot = startOfDay.getTime();
+        Date afterAddingMins = startOfDay.getTime();
+        for (int i = 0; i < 1440; i++) {
+            long curTimeInMs = afterAddingMins.getTime();
+            afterAddingMins = new Date(curTimeInMs + 60000);
+            moonp = MoonPosition.compute()
+                    .at(loc.getLatitude(), loc.getLongitude())
+                    .on(afterAddingMins)
+                    .execute();
+            double alt = moonp.getAltitude();
+            if (increasing && alt < prev) {
+                moonOverHead = afterAddingMins;
+                increasing = false;
+                decreasing = true;
+            } else if (decreasing && alt > prev) {
+                moonUnderFoot = afterAddingMins;
+                decreasing = false;
+                increasing = true;
+            } else if (prev != 0) {
+                if (alt > prev) increasing = true;
+                else decreasing = true;
             }
-        });
-        queue.add(stringRequest);
+            prev = alt;
+        }
+        ((TextView) findViewById(R.id.lon)).setText(Double.toString(loc.getLongitude()));
+        ((TextView) findViewById(R.id.lat)).setText(Double.toString(loc.getLatitude()));
+        ((TextView) findViewById(R.id.offset)).setText(offset);
+        ((TextView) findViewById(R.id.sunRise)).setText(parseTime(times.getRise()));
+        ((TextView) findViewById(R.id.sunSet)).setText(parseTime(times.getSet()));
+        ((TextView) findViewById(R.id.moonRise)).setText(parseTime(moon.getRise()));
+        ((TextView) findViewById(R.id.moonSet)).setText(parseTime(moon.getSet()));
+        ((TextView) findViewById(R.id.moonTransit)).setText(parseTime(moonOverHead));
+        ((TextView) findViewById(R.id.moonUnder)).setText(parseTime(moonUnderFoot));
+
+        //   ((TextView) findViewById(R.id.moonPhase)).setText(reader.getString("moonPhase"));
+        ((TextView) findViewById(R.id.minor)).setText(addMinor(moon));
+        ((TextView) findViewById(R.id.major)).setText(addMajor(moonOverHead, moonUnderFoot));
     }
 
-    private String parse(String aStart, String aStop, String bStart, String bStop) throws ParseException {
-        return parseTime(aStart) + " - " + parseTime(aStop) + "    " + parseTime(bStart) + " - " + parseTime(bStop);
+    private String addMinor(MoonTimes moon) {
+        if (moon.getSet().getTime() < moon.getRise().getTime())
+            return parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
+                    parseTime(new Date(moon.getSet().getTime() + 1800000)) + "    " +
+                    parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
+                    parseTime(new Date(moon.getRise().getTime() + 1800000));
+        else
+            return parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
+                    parseTime(new Date(moon.getRise().getTime() + 1800000)) + "    " +
+                    parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
+                    parseTime(new Date(moon.getSet().getTime() + 1800000));
     }
 
-    String parseTime(String time) throws ParseException {
-        final SimpleDateFormat sdf = new SimpleDateFormat("H:mm");
-        final Date dateObj = sdf.parse(time);
-        return new SimpleDateFormat("h:mm a").format(dateObj);
+    private String addMajor(Date moonOverHead, Date moonUnderFoot) {
+        if (moonOverHead.getTime() > moonUnderFoot.getTime())
+            return parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
+                    parseTime(new Date(moonUnderFoot.getTime() + 3600000)) + "    " +
+                    parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
+                    parseTime(new Date(moonOverHead.getTime() + 3600000));
+        else
+            return parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
+                    parseTime(new Date(moonOverHead.getTime() + 3600000)) + "    " +
+                    parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
+                    parseTime(new Date(moonUnderFoot.getTime() + 3600000));
+    }
 
+    String parseTime(Date time) {
+        return new SimpleDateFormat("h:mm a").format(time);
     }
 
     public void showWeather() {

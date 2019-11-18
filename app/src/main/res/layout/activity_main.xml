@@ -68,9 +68,9 @@
                 android:layout_gravity="center"
                 android:background="@drawable/ic_follow"
                 android:onClick="addFollow"
-                android:textColor="#FA0D0D"
+                android:textColor="#FFFFFF"
                 android:textSize="30sp"
-                android:textStyle="bold"/>
+                android:textStyle="bold" />
         </TableRow>
     </TableLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
