@@ -87,8 +87,8 @@ public class ForecastActivity extends AppCompatActivity {
         double prev = 0;
         boolean increasing = false;
         boolean decreasing = false;
-        Date moonOverHead = startOfDay.getTime();
-        Date moonUnderFoot = startOfDay.getTime();
+        Date moonOverHead = null;
+        Date moonUnderFoot = null;
         Date afterAddingMins = startOfDay.getTime();
         for (int i = 0; i < 1440; i++) {
             long curTimeInMs = afterAddingMins.getTime();
@@ -128,33 +128,54 @@ public class ForecastActivity extends AppCompatActivity {
     }
 
     private String addMinor(MoonTimes moon) {
-        if (moon.getSet().getTime() < moon.getRise().getTime())
+        if (moon.getSet() != null && moon.getRise() != null && moon.getSet().getTime() < moon.getRise().getTime())
             return parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
                     parseTime(new Date(moon.getSet().getTime() + 1800000)) + "    " +
                     parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
                     parseTime(new Date(moon.getRise().getTime() + 1800000));
-        else
-            return parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
-                    parseTime(new Date(moon.getRise().getTime() + 1800000)) + "    " +
-                    parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
-                    parseTime(new Date(moon.getSet().getTime() + 1800000));
+        else {
+            String range = "";
+            if (moon.getRise() != null)
+                range = parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
+                        parseTime(new Date(moon.getRise().getTime() + 1800000)) + "    ";
+            else
+                range = "N/A ";
+            if (moon.getSet() != null)
+                range += parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
+                        parseTime(new Date(moon.getSet().getTime() + 1800000));
+            else
+                range += "N/A";
+            return range;
+        }
     }
 
     private String addMajor(Date moonOverHead, Date moonUnderFoot) {
-        if (moonOverHead.getTime() > moonUnderFoot.getTime())
+        if (moonOverHead != null && moonUnderFoot != null && moonOverHead.getTime() > moonUnderFoot.getTime())
             return parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
                     parseTime(new Date(moonUnderFoot.getTime() + 3600000)) + "    " +
                     parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
                     parseTime(new Date(moonOverHead.getTime() + 3600000));
-        else
-            return parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
-                    parseTime(new Date(moonOverHead.getTime() + 3600000)) + "    " +
-                    parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
-                    parseTime(new Date(moonUnderFoot.getTime() + 3600000));
+        else {
+            String range = "";
+
+            if (moonOverHead != null)
+                range = parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
+                        parseTime(new Date(moonOverHead.getTime() + 3600000)) + "    ";
+            else
+                range = "N/A ";
+            if (moonUnderFoot != null)
+                range += parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
+                        parseTime(new Date(moonUnderFoot.getTime() + 3600000));
+            else
+                range += "N/A";
+            return range;
+        }
     }
 
     String parseTime(Date time) {
-        return new SimpleDateFormat("h:mm a").format(time);
+        if (time != null)
+            return new SimpleDateFormat("h:mm a").format(time);
+        return "N/A";
     }
 
     public void showWeather() {
