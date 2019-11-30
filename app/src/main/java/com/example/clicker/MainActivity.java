@@ -21,6 +21,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -48,6 +50,7 @@ import com.google.android.gms.maps.model.TileProvider;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -140,6 +143,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     };
 
     public void initView() {
+
+        Solunar solunar = new Solunar();
+        solunar.populate(getLocation(), GregorianCalendar.getInstance());
+        ((TextView) findViewById(R.id.majorLbl)).setText(solunar.major);
+        ((TextView) findViewById(R.id.minorLbl)).setText(solunar.minor);
+        ((ImageButton) findViewById(R.id.forecastButton)).setImageResource(solunar.moonPhaseIcon);
         pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
         pointListAdapter.updatePoints();
         refreshCounts();
@@ -437,5 +446,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void openSettings(View view) {
         Intent settings = new Intent(this, SettingsActivity.class);
         startActivity(settings);
+    }
+
+    public void forcast(View view) {
+        Intent forecast = new Intent(this, ForecastActivity.class);
+        forecast.putExtra("LOCATION", getLocation());
+        startActivity(forecast);
     }
 }

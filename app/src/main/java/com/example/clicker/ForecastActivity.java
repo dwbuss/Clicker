@@ -4,6 +4,8 @@ import android.location.Location;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -66,10 +68,10 @@ public class ForecastActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.moonSet)).setText(solunar.moonSet);
         ((TextView) findViewById(R.id.moonTransit)).setText(solunar.moonOverHead);
         ((TextView) findViewById(R.id.moonUnder)).setText(solunar.moonUnderFoot);
-
-        //   ((TextView) findViewById(R.id.moonPhase)).setText(reader.getString("moonPhase"));
+        ((TextView) findViewById(R.id.moonPhase)).setText(solunar.moonPhase);
         ((TextView) findViewById(R.id.minor)).setText(solunar.minor);
         ((TextView) findViewById(R.id.major)).setText(solunar.major);
+        ((ImageView)findViewById(R.id.moonView)).setImageResource(solunar.moonPhaseIcon);
     }
 
     public void showWeather() {
