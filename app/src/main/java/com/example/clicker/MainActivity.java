@@ -158,7 +158,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     };
 
     public void initView() {
-
         Solunar solunar = new Solunar();
         solunar.populate(getLocation(), GregorianCalendar.getInstance());
         TextView majorText = ((TextView) findViewById(R.id.majorLbl));
@@ -183,6 +182,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             for (Point p : points) {
                 addPointMarker(p);
             }
+            addCrowLayer();
         }
     }
 
@@ -301,16 +301,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        File sdcard = new File("/mnt/sdcard/");
-        File file = new File(sdcard, "Crow.mbtiles");
 
-        if (!file.exists())
-            Toast.makeText(this, "File not Found" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-
-        LatLng crow = new LatLng(49.217314, -93.863248);
-
-        TileProvider tileProvider = new ExpandedMBTilesTileProvider(file, 256, 256);
-        mMap.addTileOverlay(new TileOverlayOptions().tileProvider(tileProvider));
         mMap.setMyLocationEnabled(true);
         mMap.getUiSettings().setAllGesturesEnabled(true);
         mMap.getUiSettings().setZoomControlsEnabled(true);
@@ -319,17 +310,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+
+        LatLng crow = new LatLng(49.217314, -93.863248);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 16.0));
         mMap.setOnMyLocationButtonClickListener(onMyLocationButtonClickListener);
         mMap.setOnMapLongClickListener(onMyMapLongClickListener);
         mMap.setOnCameraMoveStartedListener(onCameraMoveStartedListener);
         mMap.setOnInfoWindowLongClickListener(onInfoWindowLongClickListener);
+        addCrowLayer();
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
         List<Point> points = pointBox.getAll();
         for (Point p : points) {
             addPointMarker(p);
         }
+    }
+
+    private void addCrowLayer() {
+        File sdcard = new File("/mnt/sdcard/");
+        File file = new File(sdcard, "Crow.mbtiles");
+
+        if (!file.exists())
+            Toast.makeText(this, "File not Found" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+
+        TileProvider tileProvider = new ExpandedMBTilesTileProvider(file, 256, 256);
+        mMap.addTileOverlay(new TileOverlayOptions().tileProvider(tileProvider));
     }
 
     private GoogleMap.OnInfoWindowLongClickListener onInfoWindowLongClickListener = new GoogleMap.OnInfoWindowLongClickListener() {
@@ -417,25 +422,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         dialogDelete.show();
     }
 
-    private GoogleMap.OnMyLocationButtonClickListener onMyLocationButtonClickListener =
-            new GoogleMap.OnMyLocationButtonClickListener() {
-                @Override
-                public boolean onMyLocationButtonClick() {
-                    if ((follow && northUp) || !follow) {
-                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                        View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
-                        mMyLocationButtonView.setBackgroundColor(Color.RED);
-                        northUp = false;
-                        follow = true;
-                    } else if (follow) {
-                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                        View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
-                        mMyLocationButtonView.setBackgroundColor(Color.GREEN);
-                        northUp = true;
-                    }
-                    return false;
-                }
-            };
+    private GoogleMap.OnMyLocationButtonClickListener onMyLocationButtonClickListener = new GoogleMap.OnMyLocationButtonClickListener() {
+        @Override
+        public boolean onMyLocationButtonClick() {
+            if ((follow && northUp) || !follow) {
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
+                mMyLocationButtonView.setBackgroundColor(Color.RED);
+                northUp = false;
+                follow = true;
+            } else if (follow) {
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                View mMyLocationButtonView = mapFragment.getView().findViewWithTag("GoogleMapMyLocationButton");
+                mMyLocationButtonView.setBackgroundColor(Color.GREEN);
+                northUp = true;
+            }
+            return false;
+        }
+    };
 
     private GoogleMap.OnCameraMoveStartedListener onCameraMoveStartedListener = (new GoogleMap.OnCameraMoveStartedListener() {
         @Override
@@ -450,31 +454,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     });
 
-    private GoogleMap.OnMapLongClickListener onMyMapLongClickListener =
-            new GoogleMap.OnMapLongClickListener() {
-                @Override
-                public void onMapLongClick(final LatLng latLng) {
+    private GoogleMap.OnMapLongClickListener onMyMapLongClickListener = new GoogleMap.OnMapLongClickListener() {
+        @Override
+        public void onMapLongClick(final LatLng latLng) {
+            String[] contactType = {"CATCH", "CONTACT", "FOLLOW"};
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Choose an Action")
+                    .setItems(contactType, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Location loc = new Location(LocationManager.GPS_PROVIDER);
+                            loc.setLongitude(latLng.longitude);
+                            loc.setLatitude(latLng.latitude);
+                            if (which == 0)
+                                addPoint("CATCH", loc);
+                            if (which == 1)
+                                addPoint("CONTACT", loc);
+                            if (which == 2)
+                                addPoint("FOLLOW", loc);
 
-                    String[] contactType = {"CATCH", "CONTACT", "FOLLOW"};
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Choose an Action")
-                            .setItems(contactType, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    Location loc = new Location(LocationManager.GPS_PROVIDER);
-                                    loc.setLongitude(latLng.longitude);
-                                    loc.setLatitude(latLng.latitude);
-                                    if (which == 0)
-                                        addPoint("CATCH", loc);
-                                    if (which == 1)
-                                        addPoint("CONTACT", loc);
-                                    if (which == 2)
-                                        addPoint("FOLLOW", loc);
-
-                                }
-                            }).show();
-                }
-            };
+                        }
+                    }).show();
+        }
+    };
 
     public void openSettings(View view) {
         Intent settings = new Intent(this, SettingsActivity.class);
