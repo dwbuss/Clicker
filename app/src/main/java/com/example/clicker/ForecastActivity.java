@@ -30,9 +30,7 @@ import java.util.TimeZone;
 
 public class ForecastActivity extends AppCompatActivity {
     private Button homeBtn;
-    private Location loc;
     private Calendar cal;
-    private String offset;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,15 +43,7 @@ public class ForecastActivity extends AppCompatActivity {
                 finish();
             }
         });
-        loc = (Location) getIntent().getExtras().get("LOCATION");
-
-        TimeZone tz = TimeZone.getDefault();
-        cal = GregorianCalendar.getInstance(tz);
-
-        int offsetInMillis = tz.getOffset(cal.getTimeInMillis());
-
-        offset = String.format("%02d:%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
-        offset = (offsetInMillis >= 0 ? "+" : "-") + Integer.parseInt(offset.split(":")[0]);
+        cal = GregorianCalendar.getInstance();
         setDate();
     }
 
@@ -65,120 +55,25 @@ public class ForecastActivity extends AppCompatActivity {
     }
 
     public void showSolunar() {
-        Calendar startOfDay = Calendar.getInstance();
-        startOfDay.setTime(cal.getTime());
-        startOfDay.set(Calendar.HOUR_OF_DAY, 0);
-        startOfDay.set(Calendar.MINUTE, 0);
-        startOfDay.set(Calendar.SECOND, 0);
-        startOfDay.set(Calendar.MILLISECOND, 0);
-
-        SunTimes times = SunTimes.compute()
-                .on(startOfDay)
-                .fullCycle()
-                .at(loc.getLatitude(), loc.getLongitude())
-                .execute();
-        MoonTimes moon = MoonTimes.compute()
-                .on(startOfDay)
-                .fullCycle()
-                .oneDay()
-                .at(loc.getLatitude(), loc.getLongitude())
-                .execute();
-        MoonPosition moonp;
-        double prev = 0;
-        boolean increasing = false;
-        boolean decreasing = false;
-        Date moonOverHead = null;
-        Date moonUnderFoot = null;
-        Date afterAddingMins = startOfDay.getTime();
-        for (int i = 0; i < 1440; i++) {
-            long curTimeInMs = afterAddingMins.getTime();
-            afterAddingMins = new Date(curTimeInMs + 60000);
-            moonp = MoonPosition.compute()
-                    .at(loc.getLatitude(), loc.getLongitude())
-                    .on(afterAddingMins)
-                    .execute();
-            double alt = moonp.getAltitude();
-            if (increasing && alt < prev) {
-                moonOverHead = afterAddingMins;
-                increasing = false;
-                decreasing = true;
-            } else if (decreasing && alt > prev) {
-                moonUnderFoot = afterAddingMins;
-                decreasing = false;
-                increasing = true;
-            } else if (prev != 0) {
-                if (alt > prev) increasing = true;
-                else decreasing = true;
-            }
-            prev = alt;
-        }
-        ((TextView) findViewById(R.id.lon)).setText(Double.toString(loc.getLongitude()));
-        ((TextView) findViewById(R.id.lat)).setText(Double.toString(loc.getLatitude()));
-        ((TextView) findViewById(R.id.offset)).setText(offset);
-        ((TextView) findViewById(R.id.sunRise)).setText(parseTime(times.getRise()));
-        ((TextView) findViewById(R.id.sunSet)).setText(parseTime(times.getSet()));
-        ((TextView) findViewById(R.id.moonRise)).setText(parseTime(moon.getRise()));
-        ((TextView) findViewById(R.id.moonSet)).setText(parseTime(moon.getSet()));
-        ((TextView) findViewById(R.id.moonTransit)).setText(parseTime(moonOverHead));
-        ((TextView) findViewById(R.id.moonUnder)).setText(parseTime(moonUnderFoot));
+        Solunar solunar = new Solunar();
+        solunar.populate((Location) getIntent().getExtras().get("LOCATION"), cal);
+        ((TextView) findViewById(R.id.lon)).setText(solunar.longitude);
+        ((TextView) findViewById(R.id.lat)).setText(solunar.latitude);
+        ((TextView) findViewById(R.id.offset)).setText(solunar.offset);
+        ((TextView) findViewById(R.id.sunRise)).setText(solunar.sunRise);
+        ((TextView) findViewById(R.id.sunSet)).setText(solunar.sunSet);
+        ((TextView) findViewById(R.id.moonRise)).setText(solunar.moonRise);
+        ((TextView) findViewById(R.id.moonSet)).setText(solunar.moonSet);
+        ((TextView) findViewById(R.id.moonTransit)).setText(solunar.moonOverHead);
+        ((TextView) findViewById(R.id.moonUnder)).setText(solunar.moonUnderFoot);
 
         //   ((TextView) findViewById(R.id.moonPhase)).setText(reader.getString("moonPhase"));
-        ((TextView) findViewById(R.id.minor)).setText(addMinor(moon));
-        ((TextView) findViewById(R.id.major)).setText(addMajor(moonOverHead, moonUnderFoot));
-    }
-
-    private String addMinor(MoonTimes moon) {
-        if (moon.getSet() != null && moon.getRise() != null && moon.getSet().getTime() < moon.getRise().getTime())
-            return parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
-                    parseTime(new Date(moon.getSet().getTime() + 1800000)) + "    " +
-                    parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
-                    parseTime(new Date(moon.getRise().getTime() + 1800000));
-        else {
-            String range = "";
-            if (moon.getRise() != null)
-                range = parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
-                        parseTime(new Date(moon.getRise().getTime() + 1800000)) + "    ";
-            else
-                range = "N/A ";
-            if (moon.getSet() != null)
-                range += parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
-                        parseTime(new Date(moon.getSet().getTime() + 1800000));
-            else
-                range += "N/A";
-            return range;
-        }
-    }
-
-    private String addMajor(Date moonOverHead, Date moonUnderFoot) {
-        if (moonOverHead != null && moonUnderFoot != null && moonOverHead.getTime() > moonUnderFoot.getTime())
-            return parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
-                    parseTime(new Date(moonUnderFoot.getTime() + 3600000)) + "    " +
-                    parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
-                    parseTime(new Date(moonOverHead.getTime() + 3600000));
-        else {
-            String range = "";
-
-            if (moonOverHead != null)
-                range = parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
-                        parseTime(new Date(moonOverHead.getTime() + 3600000)) + "    ";
-            else
-                range = "N/A ";
-            if (moonUnderFoot != null)
-                range += parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
-                        parseTime(new Date(moonUnderFoot.getTime() + 3600000));
-            else
-                range += "N/A";
-            return range;
-        }
-    }
-
-    String parseTime(Date time) {
-        if (time != null)
-            return new SimpleDateFormat("h:mm a").format(time);
-        return "N/A";
+        ((TextView) findViewById(R.id.minor)).setText(solunar.minor);
+        ((TextView) findViewById(R.id.major)).setText(solunar.major);
     }
 
     public void showWeather() {
+        Location loc = (Location) getIntent().getExtras().get("LOCATION");
         String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + loc.getLatitude() + "," + loc.getLongitude();
         RequestQueue queue = Volley.newRequestQueue(this);
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -188,10 +83,18 @@ public class ForecastActivity extends AppCompatActivity {
                         try {
                             JSONObject reader = new JSONObject(response);
                             JSONObject main = reader.getJSONObject("currently");
-                            ((TextView) findViewById(R.id.temperature)).setText(main.getString("temperature"));
+                            ((TextView) findViewById(R.id.temperature)).setText(main.getString("temperature") + (char) 0x00B0);
+                            ((TextView) findViewById(R.id.apparentTemperature)).setText(main.getString("apparentTemperature") + (char) 0x00B0);
+                            ((TextView) findViewById(R.id.dewPoint)).setText(main.getString("dewPoint") + (char) 0x00B0);
+                            ((TextView) findViewById(R.id.windSpeed)).setText(main.getString("windSpeed") + " mph " + getCardinalDirection(main.getDouble("windBearing")));
+                            ((TextView) findViewById(R.id.windGust)).setText(main.getString("windGust") + " mph");
+                            ((TextView) findViewById(R.id.time)).setText(new SimpleDateFormat("MM-dd-yyyy h:mm a").format(new Date(1000 * Long.parseLong(main.getString("time")))));
+                            ((TextView) findViewById(R.id.summary)).setText(main.getString("summary"));
+                            ((TextView) findViewById(R.id.precipProbability)).setText(main.getString("precipProbability"));
                             ((TextView) findViewById(R.id.dewPoint)).setText(main.getString("dewPoint"));
-                            ((TextView) findViewById(R.id.windSpeed)).setText(main.getString("windSpeed"));
-                            ((TextView) findViewById(R.id.pressure)).setText(main.getString("pressure"));
+                            ((TextView) findViewById(R.id.humidity)).setText(main.getString("humidity"));
+                            ((TextView) findViewById(R.id.pressure)).setText(main.getString("pressure") + " mb");
+                            ((TextView) findViewById(R.id.cloudCover)).setText(main.getString("cloudCover"));
 
                             JSONObject main1 = reader.getJSONObject("daily");
                             ((TextView) findViewById(R.id.summary)).setText(main1.getString("summary"));
@@ -208,6 +111,11 @@ public class ForecastActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    String getCardinalDirection(double input) {
+        String directions[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"};
+        int index = (int) Math.floor(((input - 22.5) % 360) / 45);
+        return directions[index + 1];
+    }
 
     public void nextDay(View view) {
         cal.add(Calendar.DATE, 1);

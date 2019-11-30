@@ -1,7 +1,6 @@
 package com.example.clicker;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -27,7 +26,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
@@ -38,7 +36,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -244,10 +241,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private BitmapDescriptor getMarker(String contactType) {
         if (contactType.equals("CATCH"))
-            return BitmapDescriptorFactory.fromResource(R.drawable.ic_catch);
+            return BitmapDescriptorFactory.fromResource(R.drawable.gm_catch);
         else if (contactType.equals("CONTACT"))
-            return BitmapDescriptorFactory.fromResource(R.drawable.ic_contact);
-        return BitmapDescriptorFactory.fromResource(R.drawable.ic_follow);
+            return BitmapDescriptorFactory.fromResource(R.drawable.gm_contact);
+        return BitmapDescriptorFactory.fromResource(R.drawable.gm_follow);
     }
 
     private Location getLocation() {
@@ -436,4 +433,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             }).show();
                 }
             };
+
+    public void openSettings(View view) {
+        Intent settings = new Intent(this, SettingsActivity.class);
+        startActivity(settings);
+    }
 }
