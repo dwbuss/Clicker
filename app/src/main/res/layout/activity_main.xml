@@ -8,10 +8,6 @@
     tools:context=".MainActivity">
 
     <include
-        android:id="@+id/toolbar"
-        layout="@layout/toolbar" />
-
-    <include
         android:id="@+id/include"
         layout="@layout/map_main"
         android:layout_width="0dp"
@@ -54,7 +50,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/textView17"
@@ -62,7 +58,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Major:"
-            android:textColor="#FFFFFF"/>
+            android:textColor="#FFFFFF" />
 
         <TextView
             android:id="@+id/majorLbl"

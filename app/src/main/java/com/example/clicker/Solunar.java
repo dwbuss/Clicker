@@ -27,6 +27,8 @@ public class Solunar {
     public int moonPhaseIcon;
     public String minor;
     public String major;
+    public boolean isMajor;
+    public boolean isMinor;
 
     public void populate(Location loc, Calendar cal) {
         int offsetInMillis = TimeZone.getDefault().getOffset(cal.getTimeInMillis());
@@ -92,8 +94,8 @@ public class Solunar {
         moonSet = parseTime(moon.getSet());
         moonOverHead = parseTime(moonOverHeadDt);
         moonUnderFoot = parseTime(moonUnderFootDt);
-        minor = addMinor(moon);
-        major = addMajor(moonOverHeadDt, moonUnderFootDt);
+        minor = addMinor(cal, moon);
+        major = addMajor(cal, moonOverHeadDt, moonUnderFootDt);
     }
 
     String parseTime(Date time) {
@@ -192,46 +194,66 @@ public class Solunar {
             R.drawable.moon29,
     };
 
-    private String addMajor(Date moonOverHead, Date moonUnderFoot) {
-        if (moonOverHead != null && moonUnderFoot != null && moonOverHead.getTime() > moonUnderFoot.getTime())
-            return parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
-                    parseTime(new Date(moonUnderFoot.getTime() + 3600000)) + "    " +
-                    parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
-                    parseTime(new Date(moonOverHead.getTime() + 3600000));
-        else {
-            String range = "";
+    private String addMajor(Calendar cal, Date moonOverHead, Date moonUnderFoot) {
+        long curTime = cal.getTime().getTime();
+        long overHead = moonOverHead == null ? 0 : moonOverHead.getTime();
+        long underFoot = moonUnderFoot == null ? 0 : moonUnderFoot.getTime();
+        if (moonOverHead != null && moonUnderFoot != null && overHead > underFoot) {
+            if (((underFoot - 3600000) > curTime && (underFoot + 3600000) < curTime) ||
+                    ((overHead - 3600000) > curTime && (overHead + 3600000) < curTime))
+                isMajor = true;
 
-            if (moonOverHead != null)
-                range = parseTime(new Date(moonOverHead.getTime() - 3600000)) + " - " +
-                        parseTime(new Date(moonOverHead.getTime() + 3600000)) + "    ";
-            else
+            return parseTime(new Date(underFoot - 3600000)) + " - " +
+                    parseTime(new Date(underFoot + 3600000)) + "    " +
+                    parseTime(new Date(overHead - 3600000)) + " - " +
+                    parseTime(new Date(overHead + 3600000));
+        } else {
+            String range = "";
+            if (moonOverHead != null) {
+                range = parseTime(new Date(overHead - 3600000)) + " - " +
+                        parseTime(new Date(overHead + 3600000)) + "    ";
+                if ((overHead - 3600000) > curTime && (overHead + 3600000) < curTime)
+                    isMajor = true;
+            } else
                 range = "N/A ";
-            if (moonUnderFoot != null)
-                range += parseTime(new Date(moonUnderFoot.getTime() - 3600000)) + " - " +
-                        parseTime(new Date(moonUnderFoot.getTime() + 3600000));
-            else
+            if (moonUnderFoot != null) {
+                range += parseTime(new Date(underFoot - 3600000)) + " - " +
+                        parseTime(new Date(underFoot + 3600000));
+                if ((underFoot - 3600000) > curTime && (underFoot + 3600000) < curTime)
+                    isMajor = true;
+            } else
                 range += "N/A";
             return range;
         }
     }
 
-    private String addMinor(MoonTimes moon) {
-        if (moon.getSet() != null && moon.getRise() != null && moon.getSet().getTime() < moon.getRise().getTime())
-            return parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
-                    parseTime(new Date(moon.getSet().getTime() + 1800000)) + "    " +
-                    parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
-                    parseTime(new Date(moon.getRise().getTime() + 1800000));
-        else {
+    private String addMinor(Calendar cal, MoonTimes moon) {
+        long curTime = cal.getTime().getTime();
+        long moonSet = (moon.getSet() == null) ? 0 : moon.getSet().getTime();
+        long moonRise = (moon.getRise() == null) ? 0 : moon.getRise().getTime();
+        if (moon.getSet() != null && moon.getRise() != null && moonSet < moonRise) {
+            if (((moonRise - 1800000) > curTime && (moonRise + 1800000) < curTime) ||
+                    ((moonSet - 1800000) > curTime && (moonSet + 1800000) < curTime))
+                isMinor = true;
+            return parseTime(new Date(moonSet - 1800000)) + " - " +
+                    parseTime(new Date(moonSet + 1800000)) + "    " +
+                    parseTime(new Date(moonRise - 1800000)) + " - " +
+                    parseTime(new Date(moonRise + 1800000));
+        } else {
             String range = "";
-            if (moon.getRise() != null)
-                range = parseTime(new Date(moon.getRise().getTime() - 1800000)) + " - " +
-                        parseTime(new Date(moon.getRise().getTime() + 1800000)) + "    ";
-            else
+            if (moon.getRise() != null) {
+                range = parseTime(new Date(moonRise - 1800000)) + " - " +
+                        parseTime(new Date(moonRise + 1800000)) + "    ";
+                if ((moonRise - 1800000) > curTime && (moonRise + 1800000) < curTime)
+                    isMinor = true;
+            } else
                 range = "N/A ";
-            if (moon.getSet() != null)
-                range += parseTime(new Date(moon.getSet().getTime() - 1800000)) + " - " +
-                        parseTime(new Date(moon.getSet().getTime() + 1800000));
-            else
+            if (moon.getSet() != null) {
+                range += parseTime(new Date(moonSet - 1800000)) + " - " +
+                        parseTime(new Date(moonSet + 1800000));
+                if ((moonSet - 1800000) > curTime && (moonSet + 1800000) < curTime)
+                    isMinor = true;
+            } else
                 range += "N/A";
             return range;
         }

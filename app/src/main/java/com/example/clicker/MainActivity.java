@@ -1,6 +1,9 @@
 package com.example.clicker;
 
 import android.Manifest;
+import android.animation.ArgbEvaluator;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -19,6 +22,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -86,8 +90,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         colors.put("FOLLOW", BitmapDescriptorFactory.HUE_BLUE);
         colors.put("CONTACT", BitmapDescriptorFactory.HUE_YELLOW);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
         ArrayList<String> permissions = new ArrayList<>();
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
         permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
@@ -146,8 +148,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Solunar solunar = new Solunar();
         solunar.populate(getLocation(), GregorianCalendar.getInstance());
-        ((TextView) findViewById(R.id.majorLbl)).setText(solunar.major);
-        ((TextView) findViewById(R.id.minorLbl)).setText(solunar.minor);
+        TextView majorText = ((TextView) findViewById(R.id.majorLbl));
+        TextView minorText = ((TextView) findViewById(R.id.minorLbl));
+        majorText.setText(solunar.major);
+        minorText.setText(solunar.minor);
+        if (solunar.isMajor)
+            flash(majorText);
+
+        if (solunar.isMinor)
+            flash(minorText);
+
         ((ImageButton) findViewById(R.id.forecastButton)).setImageResource(solunar.moonPhaseIcon);
         pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
         pointListAdapter.updatePoints();
@@ -161,6 +171,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 addPointMarker(p);
             }
         }
+    }
+
+    private void flash(TextView textObj) {
+        ObjectAnimator animator = ObjectAnimator.ofInt(textObj, "backgroundColor", Color.TRANSPARENT, Color.BLUE);
+        animator.setDuration(500);
+        animator.setEvaluator(new ArgbEvaluator());
+        animator.setRepeatMode(ValueAnimator.REVERSE);
+        animator.setRepeatCount(Animation.INFINITE);
+        animator.start();
     }
 
     public void refreshCounts() {
