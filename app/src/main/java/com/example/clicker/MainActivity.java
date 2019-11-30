@@ -9,14 +9,20 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -33,6 +39,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceManager;
 
 import com.example.clicker.objectbo.Point;
@@ -52,8 +59,10 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +72,9 @@ import io.objectbox.Box;
 import io.objectbox.BoxStore;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
-
+    public static final String NOTIFICATION_CHANNEL_ID = "10001";
+    private final static String default_notification_channel_id = "default";
+    private static final int pic_id = 123;
     private static final int PERMISSION_REQUEST_CODE = 100;
     private final static int ALL_PERMISSIONS_RESULT = 101;
     private List<Point> pointList = new ArrayList<>();
@@ -71,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Map<String, Float> colors;
     private boolean follow = false;
 
+    private String mCurrentPhotoPath;
     private boolean northUp = false;
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
@@ -92,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         ArrayList<String> permissions = new ArrayList<>();
         permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        permissions.add(Manifest.permission.CAMERA);
         permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
         permissions.add(Manifest.permission.INTERNET);
 
@@ -105,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000,
                 3,
                 locationListenerGPS);
+
+        registerReceiver(new MyReceiver(getLocation()), new IntentFilter(Intent.ACTION_TIME_TICK));
         getLocation();
         initView();
     }
@@ -216,7 +231,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         int result1 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_EXTERNAL_STORAGE);
         int result2 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION);
         int result3 = ContextCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET);
-        return (result1 == PackageManager.PERMISSION_GRANTED && result2 == PackageManager.PERMISSION_GRANTED && result3 == PackageManager.PERMISSION_GRANTED);
+        int result4 = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+        return (result1 == PackageManager.PERMISSION_GRANTED && result2 == PackageManager.PERMISSION_GRANTED && result3 == PackageManager.PERMISSION_GRANTED && result4 == PackageManager.PERMISSION_GRANTED);
     }
 
     @Override
@@ -494,5 +510,54 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
         dialog.show();
+    }
+
+    public void openCamera(View view) {
+        Intent camera_intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // Create the File where the photo should go
+        File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (IOException ex) {
+            // Error occurred while creating the File
+        }
+        // Continue only if the File was successfully created
+        if (photoFile != null) {
+            Uri photoURI = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", photoFile);
+            camera_intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+            //Start the camera application
+            startActivityForResult(camera_intent, pic_id);
+        }
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+        );
+
+        // Save a file: path for use with ACTION_VIEW intents
+        mCurrentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    protected void onActivityResult(int requestCode,
+                                    int resultCode,
+                                    Intent data) {
+
+        // Match the request 'pic id with requestCode
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == pic_id) {
+
+            BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+            bmOptions.inSampleSize = 4;
+            Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
+            // ivCameraPreview.setImageBitmap(bitmap);
+        }
     }
 }

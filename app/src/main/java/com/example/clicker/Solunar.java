@@ -195,12 +195,17 @@ public class Solunar {
     };
 
     private String addMajor(Calendar cal, Date moonOverHead, Date moonUnderFoot) {
-        long curTime = cal.getTime().getTime();
+        isMajor = false;
+        Date curTime = cal.getTime();
         long overHead = moonOverHead == null ? 0 : moonOverHead.getTime();
         long underFoot = moonUnderFoot == null ? 0 : moonUnderFoot.getTime();
+        Date date1 = new Date(underFoot - 3600000);
+        Date date2 = new Date(underFoot + 3600000);
+        Date date3 = new Date(overHead - 3600000);
+        Date date4 = new Date(overHead + 3600000);
         if (moonOverHead != null && moonUnderFoot != null && overHead > underFoot) {
-            if (((underFoot - 3600000) > curTime && (underFoot + 3600000) < curTime) ||
-                    ((overHead - 3600000) > curTime && (overHead + 3600000) < curTime))
+            if (((date1.compareTo(curTime) < 0) && (date2.compareTo(curTime) > 0)) ||
+                    ((date3.compareTo(curTime) < 0) && (date4.compareTo(curTime) > 0)))
                 isMajor = true;
 
             return parseTime(new Date(underFoot - 3600000)) + " - " +
@@ -212,14 +217,14 @@ public class Solunar {
             if (moonOverHead != null) {
                 range = parseTime(new Date(overHead - 3600000)) + " - " +
                         parseTime(new Date(overHead + 3600000)) + "    ";
-                if ((overHead - 3600000) > curTime && (overHead + 3600000) < curTime)
+                if ((date3.compareTo(curTime) < 0) && (date4.compareTo(curTime) > 0))
                     isMajor = true;
             } else
-                range = "N/A ";
+                range = "N/A    ";
             if (moonUnderFoot != null) {
                 range += parseTime(new Date(underFoot - 3600000)) + " - " +
                         parseTime(new Date(underFoot + 3600000));
-                if ((underFoot - 3600000) > curTime && (underFoot + 3600000) < curTime)
+                if ((date1.compareTo(curTime) < 0) && (date2.compareTo(curTime) > 0))
                     isMajor = true;
             } else
                 range += "N/A";
@@ -228,12 +233,17 @@ public class Solunar {
     }
 
     private String addMinor(Calendar cal, MoonTimes moon) {
-        long curTime = cal.getTime().getTime();
+        isMinor = false;
+        Date curTime = cal.getTime();
         long moonSet = (moon.getSet() == null) ? 0 : moon.getSet().getTime();
         long moonRise = (moon.getRise() == null) ? 0 : moon.getRise().getTime();
+        Date date1 = new Date(moonRise - 1800000);
+        Date date2 = new Date(moonRise + 1800000);
+        Date date3 = new Date(moonSet - 1800000);
+        Date date4 = new Date(moonSet + 1800000);
         if (moon.getSet() != null && moon.getRise() != null && moonSet < moonRise) {
-            if (((moonRise - 1800000) > curTime && (moonRise + 1800000) < curTime) ||
-                    ((moonSet - 1800000) > curTime && (moonSet + 1800000) < curTime))
+            if (((date1.compareTo(curTime) < 0) && (date2.compareTo(curTime) > 0)) ||
+                    ((date3.compareTo(curTime) < 0) && (date4.compareTo(curTime) > 0)))
                 isMinor = true;
             return parseTime(new Date(moonSet - 1800000)) + " - " +
                     parseTime(new Date(moonSet + 1800000)) + "    " +
@@ -244,18 +254,43 @@ public class Solunar {
             if (moon.getRise() != null) {
                 range = parseTime(new Date(moonRise - 1800000)) + " - " +
                         parseTime(new Date(moonRise + 1800000)) + "    ";
-                if ((moonRise - 1800000) > curTime && (moonRise + 1800000) < curTime)
+                if ((date1.compareTo(curTime) < 0) && (date2.compareTo(curTime) > 0))
                     isMinor = true;
             } else
-                range = "N/A ";
+                range = "N/A    ";
             if (moon.getSet() != null) {
                 range += parseTime(new Date(moonSet - 1800000)) + " - " +
                         parseTime(new Date(moonSet + 1800000));
-                if ((moonSet - 1800000) > curTime && (moonSet + 1800000) < curTime)
+                if ((date3.compareTo(curTime) < 0) && (date4.compareTo(curTime) > 0))
                     isMinor = true;
             } else
                 range += "N/A";
             return range;
         }
+    }
+
+    public String getEventNotification(Calendar cal) {
+        String minor1 = minor.split("    ")[0];
+        String minor2 = minor.split("    ")[1];
+        if (minor1.contains(parseTime(cal.getTime()) + " - "))
+            return "Minor " + minor1 + " is starting - good luck!";
+        if (minor1.contains(" - " + parseTime(cal.getTime())))
+            return "Minor " + minor1 + " has ended - time for a nap!";
+        if (minor2.contains(parseTime(cal.getTime()) + " - "))
+            return "Minor " + minor2 + " is starting - good luck!";
+        if (minor2.contains(" - " + parseTime(cal.getTime())))
+            return "Minor " + minor2 + " has ended - time for a nap!";
+
+        String major1 = major.split("    ")[0];
+        String major2 = major.split("    ")[1];
+        if (major1.contains(parseTime(cal.getTime()) + " - "))
+            return "Major " + major1 + " is starting - good luck!";
+        if (major1.contains(" - " + parseTime(cal.getTime())))
+            return "Major " + major1 + " has ended - time for a nap!";
+        if (major2.contains(parseTime(cal.getTime()) + " - "))
+            return "Major " + major2 + " is starting - good luck!";
+        if (major2.contains(" - " + parseTime(cal.getTime())))
+            return "Major " + major2 + " has ended - time for a nap!";
+        return "";
     }
 }
