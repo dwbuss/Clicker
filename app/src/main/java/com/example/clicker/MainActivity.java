@@ -117,12 +117,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(coordinate)
                         .bearing(location.getBearing())
-                        .zoom(mMap.getCameraPosition().zoom)
                         .build();
                 if (northUp)
                     cameraPosition = new CameraPosition.Builder()
                             .target(coordinate)
-                            .zoom(mMap.getCameraPosition().zoom)
                             .build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
             }
@@ -305,7 +303,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 12.0));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 16.0));
         mMap.setOnMyLocationButtonClickListener(onMyLocationButtonClickListener);
         mMap.setOnMapLongClickListener(onMyMapLongClickListener);
         mMap.setOnCameraMoveStartedListener(onCameraMoveStartedListener);
@@ -471,5 +469,30 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Intent forecast = new Intent(this, ForecastActivity.class);
         forecast.putExtra("LOCATION", getLocation());
         startActivity(forecast);
+    }
+
+    public void switchLayer(View view) {
+        final CharSequence[] items = {"Satellite", "Hybrid", "Normal", "None"};
+        AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+
+        dialog.setTitle("Choose layer");
+        dialog.setItems(items, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                if (i == 0) {
+                    mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                }
+                if (i == 1) {
+                    mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+                }
+                if (i == 2) {
+                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+                }
+                if (i == 3) {
+                    mMap.setMapType(GoogleMap.MAP_TYPE_NONE);
+                }
+            }
+        });
+        dialog.show();
     }
 }
