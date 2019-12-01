@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     SupportMapFragment mapFragment;
     private GoogleMap mMap;
     private LocationManager locationManager;
+    private MyReceiver solunarReciever;
 
     @Override
     protected void onResume() {
@@ -119,9 +120,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 3,
                 locationListenerGPS);
 
-        registerReceiver(new MyReceiver(getLocation()), new IntentFilter(Intent.ACTION_TIME_TICK));
+        solunarReciever = new MyReceiver(getLocation());
+        registerReceiver(solunarReciever, new IntentFilter(Intent.ACTION_TIME_TICK));
         getLocation();
         initView();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(solunarReciever);
     }
 
     LocationListener locationListenerGPS = new LocationListener() {
@@ -132,10 +140,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(coordinate)
                         .bearing(location.getBearing())
+                        .zoom(mMap.getCameraPosition().zoom)
                         .build();
                 if (northUp)
                     cameraPosition = new CameraPosition.Builder()
                             .target(coordinate)
+                            .zoom(mMap.getCameraPosition().zoom)
                             .build();
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
             }
@@ -143,17 +153,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
-
         }
 
         @Override
         public void onProviderEnabled(String provider) {
-
         }
 
         @Override
         public void onProviderDisabled(String provider) {
-
         }
     };
 
@@ -263,14 +270,30 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void addPoint(String contactType, Location loc) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String username = prefs.getString("Username", null);
-        Point point = new Point(0, username, contactType, loc.getLongitude(), loc.getLatitude());
-        pointListAdapter.addOrUpdatePoint(point);
-        pointListAdapter.updatePoints();
-        addPointMarker(point);
-        refreshCounts();
+        final Point point = new Point(0, username, contactType, loc.getLongitude(), loc.getLatitude());
+        final Weather weather = new Weather();
+        weather.populate(loc, point.getTimeStamp(), getApplicationContext(), new VolleyCallBack() {
+            @Override
+            public void onSuccess() {
+                point.setAirTemp(weather.temperature);
+                point.setDewPoint(weather.dewPoint);
+                point.setWindSpeed(weather.windSpeed);
+                point.setHumidity(weather.humidity);
+                point.setPressure(weather.pressure);
+                point.setCloudCover(weather.cloudCover);
+                point.setWindDir(weather.windDir);
+                pointListAdapter.addOrUpdatePoint(point);
+                pointListAdapter.updatePoints();
+
+                showDialogUpdate(point, addPointMarker(point));
+
+                refreshCounts();
+            }
+        });
+
     }
 
-    private void addPointMarker(Point point) {
+    private Marker addPointMarker(Point point) {
         if (mMap != null) {
             Marker m = mMap.addMarker(new MarkerOptions()
                     .position(new LatLng(point.getLat(), point.getLon()))
@@ -278,7 +301,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .draggable(true)
                     .icon(getMarker(point.getContactType())));
             m.setTag(point);
+            return m;
         }
+        return null;
     }
 
     private BitmapDescriptor getMarker(String contactType) {
@@ -341,85 +366,109 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         public void onInfoWindowLongClick(final Marker marker) {
             final Point point = (Point) marker.getTag();
-            final CharSequence[] items = {"Update", "Delete"};
-            AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-
-            dialog.setTitle("Choose an action");
-            dialog.setItems(items, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    if (i == 0) {
-                        showDialogUpdate(point);
-                    }
-                    if (i == 1) {
-                        showDialogDelete(point, marker);
-                    }
-                }
-            });
-            dialog.show();
+            showDialogUpdate(point, marker);
         }
     };
 
-    private void showDialogUpdate(final Point point) {
+    private void showDialogUpdate(final Point point, final Marker marker) {
         final Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.update_dialog);
-        dialog.setTitle("Update");
+        // dialog.setTitle("Update");
 
-        final EditText edtName = dialog.findViewById(R.id.edtName);
-        final EditText edtContactType = dialog.findViewById(R.id.contactType);
-        final EditText edtdateTime = dialog.findViewById(R.id.dateTime);
-        Button btnUpdate = dialog.findViewById(R.id.btnUpdate);
-        edtName.setText(point.getName());
-        edtContactType.setText(point.getContactType());
-        edtdateTime.setText(point.getTimeStamp().toString());
+        ((EditText) dialog.findViewById(R.id.name)).setText(point.getName());
+        ((EditText) dialog.findViewById(R.id.contactType)).setText(point.getContactType());
+        ((EditText) dialog.findViewById(R.id.timeStamp)).setText(point.getTimeStamp().toString());
+        ((EditText) dialog.findViewById(R.id.lat)).setText(Double.toString(point.getLat()));
+        ((EditText) dialog.findViewById(R.id.lon)).setText(Double.toString(point.getLon()));
+        ((EditText) dialog.findViewById(R.id.bait)).setText(point.getBait());
+        ((EditText) dialog.findViewById(R.id.fishSize)).setText(point.getFishSize());
+        ((EditText) dialog.findViewById(R.id.airtemp)).setText(point.getAirTemp());
+        ((EditText) dialog.findViewById(R.id.watertemp)).setText(point.getWaterTemp());
+        ((EditText) dialog.findViewById(R.id.windSpeed)).setText(point.getWindSpeed());
+        ((EditText) dialog.findViewById(R.id.windDir)).setText(point.getWindDir());
+        ((EditText) dialog.findViewById(R.id.cloudCover)).setText(point.getCloudCover());
+        ((EditText) dialog.findViewById(R.id.dewPoint)).setText(point.getDewPoint());
+        ((EditText) dialog.findViewById(R.id.pressure)).setText(point.getPressure());
+        ((EditText) dialog.findViewById(R.id.humidity)).setText(point.getHumidity());
+        ((EditText) dialog.findViewById(R.id.notes)).setText(point.getNotes());
+
         int width = (int) (this.getResources().getDisplayMetrics().widthPixels * 0.95);
-        int height = (int) (this.getResources().getDisplayMetrics().heightPixels * 0.7);
+        int height = (int) (this.getResources().getDisplayMetrics().heightPixels * 0.95);
         dialog.getWindow().setLayout(width, height);
         dialog.show();
 
-        btnUpdate.setOnClickListener(new View.OnClickListener() {
+        Button btnCancel = dialog.findViewById(R.id.btnCancel);
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+            }
+        });
+        Button btnDelete = dialog.findViewById(R.id.btnDelete);
+        btnDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog.Builder dialogDelete = new AlertDialog.Builder(MainActivity.this);
+                dialogDelete.setTitle("Warning!!");
+                dialogDelete.setMessage("Are you sure to delete this point?");
+                dialogDelete.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        try {
+                            BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
+                            Box<Point> pointBox = boxStore.boxFor(Point.class);
+                            pointBox.remove(point);
+                            marker.remove();
+                            refreshCounts();
+                            Toast.makeText(MainActivity.this, "Delete successfully", Toast.LENGTH_SHORT).show();
+                        } catch (Exception e) {
+                            Log.e("error", e.getMessage());
+                        }
+                        dialogInterface.dismiss();
+                        dialog.dismiss();
+                    }
+                });
+                dialogDelete.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                        dialog.dismiss();
+                    }
+                });
+                dialogDelete.show();
+            }
+        });
+        Button btnSave = dialog.findViewById(R.id.btnSave);
+        btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 try {
-                    point.setName(edtName.getText().toString().trim());
+                    point.setName(((EditText) dialog.findViewById(R.id.name)).getText().toString().trim());
+                    point.setLon(Double.parseDouble(((EditText) dialog.findViewById(R.id.lon)).getText().toString().trim()));
+                    point.setLat(Double.parseDouble(((EditText) dialog.findViewById(R.id.lat)).getText().toString().trim()));
+                    // point.setTimeStamp(Date.parse((EditText) dialog.findViewById(R.id.timeStamp)).getText().toString().trim());
+                    point.setContactType(((EditText) dialog.findViewById(R.id.contactType)).getText().toString().trim());
+                    point.setBait(((EditText) dialog.findViewById(R.id.bait)).getText().toString().trim());
+                    point.setFishSize(((EditText) dialog.findViewById(R.id.fishSize)).getText().toString().trim());
+                    point.setAirTemp(((EditText) dialog.findViewById(R.id.airtemp)).getText().toString().trim());
+                    point.setWaterTemp(((EditText) dialog.findViewById(R.id.watertemp)).getText().toString().trim());
+                    point.setWindSpeed(((EditText) dialog.findViewById(R.id.windSpeed)).getText().toString().trim());
+                    point.setWindDir(((EditText) dialog.findViewById(R.id.windDir)).getText().toString().trim());
+                    point.setCloudCover(((EditText) dialog.findViewById(R.id.cloudCover)).getText().toString().trim());
+                    point.setDewPoint(((EditText) dialog.findViewById(R.id.dewPoint)).getText().toString().trim());
+                    point.setPressure(((EditText) dialog.findViewById(R.id.pressure)).getText().toString().trim());
+                    point.setHumidity(((EditText) dialog.findViewById(R.id.humidity)).getText().toString().trim());
+                    point.setNotes(((EditText) dialog.findViewById(R.id.notes)).getText().toString().trim());
                     BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
                     Box<Point> pointBox = boxStore.boxFor(Point.class);
                     pointBox.put(point);
                     dialog.dismiss();
-                    Toast.makeText(getApplicationContext(), "Update Successfull", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Save Successful", Toast.LENGTH_SHORT).show();
                 } catch (Exception error) {
                     Log.e("Update error", error.getMessage());
                 }
             }
         });
-    }
-
-    private void showDialogDelete(final Point point, final Marker marker) {
-        AlertDialog.Builder dialogDelete = new AlertDialog.Builder(MainActivity.this);
-        dialogDelete.setTitle("Warning!!");
-        dialogDelete.setMessage("Are you sure to delete?");
-        dialogDelete.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                try {
-                    BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
-                    Box<Point> pointBox = boxStore.boxFor(Point.class);
-                    pointBox.remove(point);
-                    marker.remove();
-                    refreshCounts();
-                    Toast.makeText(MainActivity.this, "Delete successfully", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Log.e("error", e.getMessage());
-                }
-            }
-        });
-        dialogDelete.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-            }
-        });
-        dialogDelete.show();
     }
 
     private GoogleMap.OnMyLocationButtonClickListener onMyLocationButtonClickListener = new GoogleMap.OnMyLocationButtonClickListener() {

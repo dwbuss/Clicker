@@ -1,9 +1,7 @@
 package com.example.clicker;
 
 import android.location.Location;
-import android.util.Log;
 
-import org.shredzone.commons.suncalc.MoonIllumination;
 import org.shredzone.commons.suncalc.MoonPosition;
 import org.shredzone.commons.suncalc.MoonTimes;
 import org.shredzone.commons.suncalc.SunTimes;
