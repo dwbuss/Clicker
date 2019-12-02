@@ -75,6 +75,11 @@ public class ForecastActivity extends AppCompatActivity {
                 ((TextView) findViewById(R.id.cloudCover)).setText(weather.cloudCover);
                 ((TextView) findViewById(R.id.summary)).setText(weather.summary);
             }
+
+            @Override
+            public void onFailure() {
+
+            }
         });
     }
 

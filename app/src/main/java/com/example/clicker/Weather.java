@@ -70,7 +70,7 @@ public class Weather {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                summary = "ERROR " + error.getMessage();
+                callback.onFailure();
             }
         });
         queue.add(stringRequest);

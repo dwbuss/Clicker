@@ -247,24 +247,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         switch (requestCode) {
             case PERMISSION_REQUEST_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.e("value", "Permission Granted, Now you can use local drive .");
+                    Log.e("value", "Permission Granted .");
                 } else {
-                    Log.e("value", "Permission Denied, You cannot use local drive .");
+                    Log.e("value", "Permission Denied.");
                 }
                 break;
         }
     }
 
     public void addContact(View view) {
-        addPoint("CONTACT", getLocation());
+        addPoint("CONTACT");
     }
 
     public void addFollow(View view) {
-        addPoint("FOLLOW", getLocation());
+        addPoint("FOLLOW");
     }
 
     public void addCatch(View view) {
-        addPoint("CATCH", getLocation());
+        addPoint("CATCH");
+    }
+
+    public void addPoint(String contactType) {
+        addPoint(contactType, getLocation());
     }
 
     public void addPoint(String contactType, Location loc) {
@@ -286,7 +290,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 pointListAdapter.updatePoints();
 
                 showDialogUpdate(point, addPointMarker(point));
+                refreshCounts();
+            }
 
+            @Override
+            public void onFailure() {
+                showDialogUpdate(point, addPointMarker(point));
                 refreshCounts();
             }
         });
@@ -341,6 +350,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.setOnMyLocationButtonClickListener(onMyLocationButtonClickListener);
         mMap.setOnMapLongClickListener(onMyMapLongClickListener);
         mMap.setOnCameraMoveStartedListener(onCameraMoveStartedListener);
+        mMap.setOnMarkerDragListener(onMarkerDragListener);
         mMap.setOnInfoWindowLongClickListener(onInfoWindowLongClickListener);
         addCrowLayer();
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
@@ -365,7 +375,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap.OnInfoWindowLongClickListener onInfoWindowLongClickListener = new GoogleMap.OnInfoWindowLongClickListener() {
         @Override
         public void onInfoWindowLongClick(final Marker marker) {
-            final Point point = (Point) marker.getTag();
+            Point point = (Point) marker.getTag();
             showDialogUpdate(point, marker);
         }
     };
@@ -490,6 +500,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     };
 
+    private GoogleMap.OnMarkerDragListener onMarkerDragListener = (new GoogleMap.OnMarkerDragListener() {
+        @Override
+        public void onMarkerDragStart(Marker marker) {
+
+        }
+
+        @Override
+        public void onMarkerDrag(Marker marker) {
+
+        }
+
+        @Override
+        public void onMarkerDragEnd(Marker marker) {
+            Point point = (Point) marker.getTag();
+            point.setLat(marker.getPosition().latitude);
+            point.setLon(marker.getPosition().longitude);
+            pointListAdapter.addOrUpdatePoint(point);
+        }
+    });
+
     private GoogleMap.OnCameraMoveStartedListener onCameraMoveStartedListener = (new GoogleMap.OnCameraMoveStartedListener() {
         @Override
         public void onCameraMoveStarted(int reason) {
@@ -539,25 +569,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void switchLayer(View view) {
-        final CharSequence[] items = {"Satellite", "Hybrid", "Normal", "None"};
+        final CharSequence[] items = {"None", "Normal", "Satellite", "TERRAIN", "Hybrid",};
         AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
 
-        dialog.setTitle("Choose layer");
+        dialog.setTitle("Select Layer");
         dialog.setItems(items, new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                if (i == 0) {
-                    mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
-                }
-                if (i == 1) {
-                    mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
-                }
-                if (i == 2) {
-                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-                }
-                if (i == 3) {
-                    mMap.setMapType(GoogleMap.MAP_TYPE_NONE);
-                }
+            public void onClick(DialogInterface dialogInterface, int mapType) {
+                mMap.setMapType(mapType);
             }
         });
         dialog.show();
