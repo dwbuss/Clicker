@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Longitude " />
-        <EditText
+        <TextView
             android:id="@+id/lon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -51,7 +51,7 @@
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Latitude" />
-        <EditText
+        <TextView
             android:id="@+id/lat"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -69,7 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Time" />
-        <EditText
+        <TextView
             android:id="@+id/timeStamp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -87,6 +87,7 @@
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Contact Type" />
+
         <EditText
             android:id="@+id/contactType"
             android:layout_width="wrap_content"

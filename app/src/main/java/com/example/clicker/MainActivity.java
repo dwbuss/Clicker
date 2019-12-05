@@ -18,6 +18,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -37,7 +38,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceManager;
@@ -256,14 +256,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void addContact(View view) {
+        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.cc_yousuck);
+        song.start();
         addPoint("CONTACT");
     }
 
     public void addFollow(View view) {
+        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.cc_nice);
+        song.start();
         addPoint("FOLLOW");
     }
 
     public void addCatch(View view) {
+        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.cc_yes);
+        song.start();
         addPoint("CATCH");
     }
 
@@ -387,9 +393,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         ((EditText) dialog.findViewById(R.id.name)).setText(point.getName());
         ((EditText) dialog.findViewById(R.id.contactType)).setText(point.getContactType());
-        ((EditText) dialog.findViewById(R.id.timeStamp)).setText(point.getTimeStamp().toString());
-        ((EditText) dialog.findViewById(R.id.lat)).setText(Double.toString(point.getLat()));
-        ((EditText) dialog.findViewById(R.id.lon)).setText(Double.toString(point.getLon()));
+        ((TextView) dialog.findViewById(R.id.timeStamp)).setText(point.getTimeStamp().toString());
+        ((TextView) dialog.findViewById(R.id.lat)).setText(Double.toString(point.getLat()));
+        ((TextView) dialog.findViewById(R.id.lon)).setText(Double.toString(point.getLon()));
         ((EditText) dialog.findViewById(R.id.bait)).setText(point.getBait());
         ((EditText) dialog.findViewById(R.id.fishSize)).setText(point.getFishSize());
         ((EditText) dialog.findViewById(R.id.airtemp)).setText(point.getAirTemp());
@@ -454,10 +460,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View view) {
                 try {
                     point.setName(((EditText) dialog.findViewById(R.id.name)).getText().toString().trim());
-                    point.setLon(Double.parseDouble(((EditText) dialog.findViewById(R.id.lon)).getText().toString().trim()));
-                    point.setLat(Double.parseDouble(((EditText) dialog.findViewById(R.id.lat)).getText().toString().trim()));
-                    // point.setTimeStamp(Date.parse((EditText) dialog.findViewById(R.id.timeStamp)).getText().toString().trim());
-                    point.setContactType(((EditText) dialog.findViewById(R.id.contactType)).getText().toString().trim());
+                     point.setContactType(((EditText) dialog.findViewById(R.id.contactType)).getText().toString().trim());
                     point.setBait(((EditText) dialog.findViewById(R.id.bait)).getText().toString().trim());
                     point.setFishSize(((EditText) dialog.findViewById(R.id.fishSize)).getText().toString().trim());
                     point.setAirTemp(((EditText) dialog.findViewById(R.id.airtemp)).getText().toString().trim());
