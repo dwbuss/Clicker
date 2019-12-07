@@ -256,19 +256,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void addContact(View view) {
-        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.cc_yousuck);
+        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.f_upped);
         song.start();
         addPoint("CONTACT");
     }
 
     public void addFollow(View view) {
-        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.cc_nice);
+        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.wtf_lookin);
         song.start();
         addPoint("FOLLOW");
     }
 
     public void addCatch(View view) {
-        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.cc_yes);
+        MediaPlayer song = MediaPlayer.create(getApplicationContext(), R.raw.g_bitch);
         song.start();
         addPoint("CATCH");
     }
