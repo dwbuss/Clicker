@@ -60,7 +60,7 @@ public class ForecastActivity extends AppCompatActivity {
     public void showWeather() {
         Location loc = (Location) getIntent().getExtras().get("LOCATION");
         final Weather weather = new Weather();
-        weather.populate(loc, cal.getTime(), getApplicationContext(), new VolleyCallBack() {
+        weather.populate(loc.getLatitude(), loc.getLongitude(), cal.getTime(), getApplicationContext(), new VolleyCallBack() {
             @Override
             public void onSuccess() {
                 ((TextView) findViewById(R.id.temperature)).setText(weather.temperature);
@@ -73,7 +73,6 @@ public class ForecastActivity extends AppCompatActivity {
                 ((TextView) findViewById(R.id.humidity)).setText(weather.humidity);
                 ((TextView) findViewById(R.id.pressure)).setText(weather.pressure);
                 ((TextView) findViewById(R.id.cloudCover)).setText(weather.cloudCover);
-                ((TextView) findViewById(R.id.summary)).setText(weather.summary);
             }
 
             @Override

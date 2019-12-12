@@ -267,27 +267,28 @@ public class Solunar {
         }
     }
 
-    public String getEventNotification(Calendar cal) {
+    public String getEventNotification(String time) {
         String minor1 = minor.split("    ")[0];
         String minor2 = minor.split("    ")[1];
-        if (minor1.contains(parseTime(cal.getTime()) + " - "))
+
+        if (minor1.contains(time + " - "))
             return "Minor " + minor1 + " is starting - good luck!";
-        if (minor1.contains(" - " + parseTime(cal.getTime())))
+        if (minor1.contains(" - " + time))
             return "Minor " + minor1 + " has ended - time for a nap!";
-        if (minor2.contains(parseTime(cal.getTime()) + " - "))
+        if (minor2.contains(time + " - "))
             return "Minor " + minor2 + " is starting - good luck!";
-        if (minor2.contains(" - " + parseTime(cal.getTime())))
+        if (minor2.contains(" - " + time))
             return "Minor " + minor2 + " has ended - time for a nap!";
 
         String major1 = major.split("    ")[0];
         String major2 = major.split("    ")[1];
-        if (major1.contains(parseTime(cal.getTime()) + " - "))
+        if (major1.contains(time + " - "))
             return "Major " + major1 + " is starting - good luck!";
-        if (major1.contains(" - " + parseTime(cal.getTime())))
+        if (major1.contains(" - " + time))
             return "Major " + major1 + " has ended - time for a nap!";
-        if (major2.contains(parseTime(cal.getTime()) + " - "))
+        if (major2.contains(time + " - "))
             return "Major " + major2 + " is starting - good luck!";
-        if (major2.contains(" - " + parseTime(cal.getTime())))
+        if (major2.contains(" - " + time))
             return "Major " + major2 + " has ended - time for a nap!";
         return "";
     }

@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         String username = prefs.getString("Username", null);
         final Point point = new Point(0, username, contactType, loc.getLongitude(), loc.getLatitude());
         final Weather weather = new Weather();
-        weather.populate(loc, point.getTimeStamp(), getApplicationContext(), new VolleyCallBack() {
+        weather.populate(loc.getLatitude(), loc.getLongitude(), getApplicationContext(), new VolleyCallBack() {
             @Override
             public void onSuccess() {
                 point.setAirTemp(weather.temperature);
@@ -389,8 +389,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void showDialogUpdate(final Point point, final Marker marker) {
         final Dialog dialog = new Dialog(this);
         dialog.setContentView(R.layout.update_dialog);
-        // dialog.setTitle("Update");
-
         ((EditText) dialog.findViewById(R.id.name)).setText(point.getName());
         ((EditText) dialog.findViewById(R.id.contactType)).setText(point.getContactType());
         ((TextView) dialog.findViewById(R.id.timeStamp)).setText(point.getTimeStamp().toString());
@@ -460,7 +458,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onClick(View view) {
                 try {
                     point.setName(((EditText) dialog.findViewById(R.id.name)).getText().toString().trim());
-                     point.setContactType(((EditText) dialog.findViewById(R.id.contactType)).getText().toString().trim());
+                    point.setContactType(((EditText) dialog.findViewById(R.id.contactType)).getText().toString().trim());
                     point.setBait(((EditText) dialog.findViewById(R.id.bait)).getText().toString().trim());
                     point.setFishSize(((EditText) dialog.findViewById(R.id.fishSize)).getText().toString().trim());
                     point.setAirTemp(((EditText) dialog.findViewById(R.id.airtemp)).getText().toString().trim());
@@ -479,6 +477,44 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Toast.makeText(getApplicationContext(), "Save Successful", Toast.LENGTH_SHORT).show();
                 } catch (Exception error) {
                     Log.e("Update error", error.getMessage());
+                }
+            }
+        });
+        Button weatherUpdate = dialog.findViewById(R.id.btnWeather);
+        weatherUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                try {
+                    final Weather weather = new Weather();
+                    weather.populate(point.getLat(), point.getLon(), point.getTimeStamp(), getApplicationContext(), new VolleyCallBack() {
+                        @Override
+                        public void onSuccess() {
+                            point.setAirTemp(weather.temperature);
+                            point.setDewPoint(weather.dewPoint);
+                            point.setWindSpeed(weather.windSpeed);
+                            point.setHumidity(weather.humidity);
+                            point.setPressure(weather.pressure);
+                            point.setCloudCover(weather.cloudCover);
+                            point.setWindDir(weather.windDir);
+                            pointListAdapter.addOrUpdatePoint(point);
+                            pointListAdapter.updatePoints();
+                        }
+
+                        @Override
+                        public void onFailure() {
+                        }
+                    });
+
+                    ((EditText) dialog.findViewById(R.id.airtemp)).setText(point.getAirTemp());
+                    ((EditText) dialog.findViewById(R.id.watertemp)).setText(point.getWaterTemp());
+                    ((EditText) dialog.findViewById(R.id.windSpeed)).setText(point.getWindSpeed());
+                    ((EditText) dialog.findViewById(R.id.windDir)).setText(point.getWindDir());
+                    ((EditText) dialog.findViewById(R.id.cloudCover)).setText(point.getCloudCover());
+                    ((EditText) dialog.findViewById(R.id.dewPoint)).setText(point.getDewPoint());
+                    ((EditText) dialog.findViewById(R.id.pressure)).setText(point.getPressure());
+                    ((EditText) dialog.findViewById(R.id.humidity)).setText(point.getHumidity());
+                } catch (Exception error) {
+                    Log.e("Update Weather error", error.getMessage());
                 }
             }
         });
@@ -633,4 +669,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             // ivCameraPreview.setImageBitmap(bitmap);
         }
     }
+
 }

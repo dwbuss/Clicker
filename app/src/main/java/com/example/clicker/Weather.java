@@ -1,16 +1,11 @@
 package com.example.clicker;
 
 import android.content.Context;
-import android.location.Location;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.RequestFuture;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
@@ -18,9 +13,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
 
 public class Weather {
     public String temperature;
@@ -29,15 +22,23 @@ public class Weather {
     public String windSpeed;
     public String windDir;
     public String windGust;
-    public String summary;
     public String date;
     public String precipProbability;
     public String humidity;
     public String pressure;
     public String cloudCover;
 
-    public void populate(Location loc, Date cal,  Context context, final VolleyCallBack callback) {
-        String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + loc.getLatitude() + "," + loc.getLongitude();
+    public void populate(double lat, double lon, Date cal, Context context, final VolleyCallBack callback) {
+        String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + lat + "," + lon + "," + (cal.getTime()/1000);
+        populate(url, context, callback);
+    }
+
+    public void populate(double lat, double lon, Context context, final VolleyCallBack callback) {
+        String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + lat + "," + lon;
+        populate(url, context, callback);
+    }
+
+    public void populate(String url, Context context, final VolleyCallBack callback) {
         RequestQueue queue = Volley.newRequestQueue(context);
 
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -60,7 +61,6 @@ public class Weather {
                             cloudCover = main.getString("cloudCover");
 
                             JSONObject main1 = reader.getJSONObject("daily");
-                            summary = main1.getString("summary");
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }

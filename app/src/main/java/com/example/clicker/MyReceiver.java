@@ -28,7 +28,7 @@ public class MyReceiver extends BroadcastReceiver {
             Solunar solunar = new Solunar();
             Calendar cal = GregorianCalendar.getInstance();
             solunar.populate(loc, cal);
-            String event = solunar.getEventNotification(cal);
+            String event = solunar.getEventNotification(solunar.parseTime(cal.getTime()));
             if (!event.isEmpty()) {
                 String notificationString = "Solunar Event";
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(
