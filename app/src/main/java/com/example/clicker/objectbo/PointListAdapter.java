@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,12 +13,17 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.clicker.MainActivity;
 import com.example.clicker.ObjectBoxApp;
 import com.example.clicker.R;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 import io.objectbox.Box;
@@ -59,13 +65,76 @@ public class PointListAdapter extends RecyclerView.Adapter<PointListAdapter.Poin
     @Override
     public void onBindViewHolder(PointListAdapter.PointListHolder holder, int position) {
         final Point point = pointList.get(position);
-        holder.tvPointWithJersey.setText(point.getName() +" " + point.getContactType()+" (" + point.getLat() + ":" + point.getLon() + ")");
+        holder.tvPointWithJersey.setText(point.getName() + " " + point.getContactType() + " (" + point.getLat() + ":" + point.getLon() + ")");
     }
 
     @Override
     public int getItemCount() {
         int i = pointList.size();
         return pointList.size();
+    }
+
+    public String getDailyCatch() {
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        return Long.toString(pointBox.query().equal(Point_.contactType, "CATCH").greater(Point_.timeStamp, today.getTime()).build().count());
+    }
+
+    public String getDailyContact() {
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        return Long.toString(pointBox.query().equal(Point_.contactType, "CONTACT").greater(Point_.timeStamp, today.getTime()).build().count());
+    }
+
+    public String getDailyFollow() {
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        return Long.toString(pointBox.query().equal(Point_.contactType, "FOLLOW").greater(Point_.timeStamp, today.getTime()).build().count());
+    }
+
+    public String getTripCatch() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        int tripLength = Integer.parseInt(prefs.getString("TripLength", "0"));
+        Calendar today = GregorianCalendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.add(Calendar.DATE, 0 - tripLength);
+        return Long.toString(pointBox.query().equal(Point_.contactType, "CATCH").greater(Point_.timeStamp, today.getTime()).build().count());
+    }
+
+    public String getTripContact() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        int tripLength = Integer.parseInt(prefs.getString("TripLength", "0"));
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.add(Calendar.DATE, 0 - tripLength);
+        return Long.toString(pointBox.query().equal(Point_.contactType, "CONTACT").greater(Point_.timeStamp, today.getTime()).build().count());
+    }
+
+    public String getTripFollow() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        int tripLength = Integer.parseInt(prefs.getString("TripLength", "0"));
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.add(Calendar.DATE, 0 - tripLength);
+        return Long.toString(pointBox.query().equal(Point_.contactType, "FOLLOW").greater(Point_.timeStamp, today.getTime()).build().count());
+    }
+
+    public String getTotalCatch() {
+        return Long.toString(pointBox.query().equal(Point_.contactType, "CATCH").build().count());
+    }
+
+    public String getTotalContact() {
+        return Long.toString(pointBox.query().equal(Point_.contactType, "CONTACT").build().count());
+    }
+
+    public String getTotalFollow() {
+        return Long.toString(pointBox.query().equal(Point_.contactType, "FOLLOW").build().count());
     }
 
     public class PointListHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

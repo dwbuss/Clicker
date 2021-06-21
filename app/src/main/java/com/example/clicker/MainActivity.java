@@ -4,6 +4,7 @@ import android.Manifest;
 import android.animation.ArgbEvaluator;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -23,6 +24,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.storage.StorageManager;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
@@ -60,8 +62,13 @@ import com.google.android.gms.maps.model.TileProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
@@ -181,11 +188,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         pointListAdapter = new PointListAdapter(getApplicationContext(), pointList);
         pointListAdapter.updatePoints();
         refreshCounts();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        int tripLength = Integer.parseInt(prefs.getString("TripLength", "0"));
+        Calendar today = GregorianCalendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        today.add(Calendar.DATE, 0 - tripLength);
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
         if (mMap != null) {
             mMap.clear();
-            List<Point> points = pointBox.getAll();
+            List<Point> points = pointBox.query().greater(Point_.timeStamp, today.getTime()).build().find();
             for (Point p : points) {
                 addPointMarker(p);
             }
@@ -205,9 +218,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void refreshCounts() {
         BoxStore boxStore = ((ObjectBoxApp) getApplicationContext()).getBoxStore();
         Box<Point> pointBox = boxStore.boxFor(Point.class);
-        ((Button) findViewById(R.id.catchBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "CATCH").build().count()));
-        ((Button) findViewById(R.id.contactBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "CONTACT").build().count()));
-        ((Button) findViewById(R.id.followBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "FOLLOW").build().count()));
+        Calendar today = Calendar.getInstance();
+        today.set(Calendar.HOUR_OF_DAY, 0);
+        today.set(Calendar.MINUTE, 0);
+        ((Button) findViewById(R.id.catchBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "CATCH").greater(Point_.timeStamp, today.getTime()).build().count()));
+        ((Button) findViewById(R.id.contactBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "CONTACT").greater(Point_.timeStamp, today.getTime()).build().count()));
+        ((Button) findViewById(R.id.followBtn)).setText(Long.toString(pointBox.query().equal(Point_.contactType, "FOLLOW").greater(Point_.timeStamp, today.getTime()).build().count()));
     }
 
     @Override
@@ -274,7 +290,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     public void addPoint(String contactType) {
-        addPoint(contactType, getLocation());
+        if (getLocation() != null) {
+            addPoint(contactType, getLocation());
+        }
     }
 
     public void addPoint(String contactType, Location loc) {
@@ -329,9 +347,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return BitmapDescriptorFactory.fromResource(R.drawable.gm_follow);
     }
 
+    private Location getLastKnownLocation() {
+        locationManager = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
+        List<String> providers = locationManager.getProviders(true);
+        Location bestLocation = null;
+        for (String provider : providers) {
+            @SuppressLint("MissingPermission") Location l = locationManager.getLastKnownLocation(provider);
+            if (l == null) {
+                continue;
+            }
+            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                // Found best last known location: %s", l);
+                bestLocation = l;
+            }
+        }
+        return bestLocation;
+    }
+
     private Location getLocation() {
         try {
-            return locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            return getLastKnownLocation();//locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         } catch (SecurityException e) {
             e.printStackTrace();
             return null;
@@ -351,7 +386,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.getUiSettings().setCompassEnabled(true);
         mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 
-        LatLng crow = new LatLng(49.217314, -93.863248);
+        LatLng crow = new LatLng(getLocation().getLatitude(), getLocation().getLongitude());// new LatLng(49.217314, -93.863248);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(crow, (float) 16.0));
         mMap.setOnMyLocationButtonClickListener(onMyLocationButtonClickListener);
         mMap.setOnMapLongClickListener(onMyMapLongClickListener);
@@ -367,10 +402,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void addCrowLayer() {
-        File sdcard = new File("/mnt/sdcard/");
-        File file = new File(sdcard, "Crow.mbtiles");
+    private static String getExternalStoragePath(Context mContext, boolean is_removable) {
 
+        StorageManager mStorageManager = (StorageManager) mContext.getSystemService(Context.STORAGE_SERVICE);
+        Class<?> storageVolumeClazz = null;
+        try {
+            storageVolumeClazz = Class.forName("android.os.storage.StorageVolume");
+            Method getVolumeList = mStorageManager.getClass().getMethod("getVolumeList");
+            Method getPath = storageVolumeClazz.getMethod("getPath");
+            Method isRemovable = storageVolumeClazz.getMethod("isRemovable");
+            Object result = getVolumeList.invoke(mStorageManager);
+            final int length = Array.getLength(result);
+            for (int i = 0; i < length; i++) {
+                Object storageVolumeElement = Array.get(result, i);
+                String path = (String) getPath.invoke(storageVolumeElement);
+                boolean removable = (Boolean) isRemovable.invoke(storageVolumeElement);
+                if (is_removable == removable) {
+                    return path;
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private void addCrowLayer() {
+
+        File sdcard = new File(getExternalStoragePath(getApplicationContext(), true));
+        File file = new File(sdcard, "Crow.mbtiles");
         if (!file.exists())
             Toast.makeText(this, "File not Found" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
 
@@ -391,7 +457,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         dialog.setContentView(R.layout.update_dialog);
         ((EditText) dialog.findViewById(R.id.name)).setText(point.getName());
         ((EditText) dialog.findViewById(R.id.contactType)).setText(point.getContactType());
-        ((TextView) dialog.findViewById(R.id.timeStamp)).setText(point.getTimeStamp().toString());
+        String timeStamp = new SimpleDateFormat("MM-dd-yyyy h:mm a").format(point.getTimeStamp());
+        ((TextView) dialog.findViewById(R.id.timeStamp)).setText(timeStamp);
         ((TextView) dialog.findViewById(R.id.lat)).setText(Double.toString(point.getLat()));
         ((TextView) dialog.findViewById(R.id.lon)).setText(Double.toString(point.getLon()));
         ((EditText) dialog.findViewById(R.id.bait)).setText(point.getBait());
@@ -459,6 +526,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 try {
                     point.setName(((EditText) dialog.findViewById(R.id.name)).getText().toString().trim());
                     point.setContactType(((EditText) dialog.findViewById(R.id.contactType)).getText().toString().trim());
+                    String timeStampStr = ((EditText) dialog.findViewById(R.id.timeStamp)).getText().toString().trim();
+
+                    Date timeStamp = new SimpleDateFormat("MM-dd-yyyy h:mm a").parse(timeStampStr);
+                    point.setTimeStamp(new Timestamp(timeStamp.getTime()));
                     point.setBait(((EditText) dialog.findViewById(R.id.bait)).getText().toString().trim());
                     point.setFishSize(((EditText) dialog.findViewById(R.id.fishSize)).getText().toString().trim());
                     point.setAirTemp(((EditText) dialog.findViewById(R.id.airtemp)).getText().toString().trim());
@@ -542,12 +613,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private GoogleMap.OnMarkerDragListener onMarkerDragListener = (new GoogleMap.OnMarkerDragListener() {
         @Override
         public void onMarkerDragStart(Marker marker) {
-
         }
 
         @Override
         public void onMarkerDrag(Marker marker) {
-
         }
 
         @Override
@@ -619,55 +688,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
         dialog.show();
-    }
-
-    public void openCamera(View view) {
-        Intent camera_intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        // Create the File where the photo should go
-        File photoFile = null;
-        try {
-            photoFile = createImageFile();
-        } catch (IOException ex) {
-            // Error occurred while creating the File
-        }
-        // Continue only if the File was successfully created
-        if (photoFile != null) {
-            Uri photoURI = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".fileprovider", photoFile);
-            camera_intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-            //Start the camera application
-            startActivityForResult(camera_intent, pic_id);
-        }
-    }
-
-    private File createImageFile() throws IOException {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = image.getAbsolutePath();
-        return image;
-    }
-
-    protected void onActivityResult(int requestCode,
-                                    int resultCode,
-                                    Intent data) {
-
-        // Match the request 'pic id with requestCode
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == pic_id) {
-
-            BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-            bmOptions.inSampleSize = 4;
-            Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath, bmOptions);
-            // ivCameraPreview.setImageBitmap(bitmap);
-        }
     }
 
 }

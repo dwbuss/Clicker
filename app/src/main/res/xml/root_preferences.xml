@@ -25,7 +25,7 @@
             android:persistent="true"
             android:title="Name"/>
         <EditTextPreference
-            android:defaultValue="10"
+            android:defaultValue="14"
             android:key="TripLength"
             app:useSimpleSummaryProvider="true"
             android:persistent="true"

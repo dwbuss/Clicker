@@ -161,17 +161,5 @@
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
         app:srcCompat="@drawable/moon15" />
 
-    <ImageButton
-        android:id="@+id/cameraButton"
-        android:layout_width="45dp"
-        android:layout_height="46dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
-        android:onClick="openCamera"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/layersButton"
-        app:srcCompat="@android:drawable/ic_menu_camera" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
