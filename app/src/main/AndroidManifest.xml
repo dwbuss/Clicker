@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <meta-data android:name="com.google.android.maps.v2.API_KEY"
-            android:value="AIzaSyCM_TPAJbs1oqtdeX_VZwrMdwq_YC6p-dQ" />
+            android:value="" />
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"></activity>
