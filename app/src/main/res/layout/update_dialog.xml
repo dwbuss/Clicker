@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <LinearLayout
@@ -14,6 +15,7 @@
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Name" />
+
         <EditText
             android:id="@+id/name"
             android:layout_width="wrap_content"
@@ -27,12 +29,14 @@
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/lonLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Longitude " />
+
         <TextView
             android:id="@+id/lon"
             android:layout_width="wrap_content"
@@ -41,16 +45,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/latLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Latitude" />
+
         <TextView
             android:id="@+id/lat"
             android:layout_width="wrap_content"
@@ -59,16 +66,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/timeStampLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Time" />
+
         <EditText
             android:id="@+id/timeStamp"
             android:layout_width="wrap_content"
@@ -77,10 +87,12 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/contactTypeLbl"
             android:gravity="right"
@@ -101,12 +113,14 @@
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/baitLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Bait" />
+
         <EditText
             android:id="@+id/bait"
             android:layout_width="wrap_content"
@@ -115,16 +129,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/fishSizeLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Fish Size" />
+
         <EditText
             android:id="@+id/fishSize"
             android:layout_width="wrap_content"
@@ -133,16 +150,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/airtempLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Air Temp" />
+
         <EditText
             android:id="@+id/airtemp"
             android:layout_width="wrap_content"
@@ -150,12 +170,14 @@
             android:layout_weight="1"
             android:gravity="bottom"
             android:text="" />
+
         <TextView
             android:id="@+id/watertempLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Water Temp" />
+
         <EditText
             android:id="@+id/watertemp"
             android:layout_width="wrap_content"
@@ -164,16 +186,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/windSpeedLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Wind Speed" />
+
         <EditText
             android:id="@+id/windSpeed"
             android:layout_width="wrap_content"
@@ -181,12 +206,14 @@
             android:layout_weight="1"
             android:gravity="bottom"
             android:text="" />
-          <TextView
+
+        <TextView
             android:id="@+id/windDirLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Wind Dir" />
+
         <EditText
             android:id="@+id/windDir"
             android:layout_width="wrap_content"
@@ -195,16 +222,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/cloudCoverLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Cloud Cover" />
+
         <EditText
             android:id="@+id/cloudCover"
             android:layout_width="wrap_content"
@@ -212,12 +242,14 @@
             android:layout_weight="1"
             android:gravity="bottom"
             android:text="" />
-       <TextView
+
+        <TextView
             android:id="@+id/dewPointLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Dew Point" />
+
         <EditText
             android:id="@+id/dewPoint"
             android:layout_width="wrap_content"
@@ -226,16 +258,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
-    <TextView
+
+        <TextView
             android:id="@+id/pressureLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Pressure" />
+
         <EditText
             android:id="@+id/pressure"
             android:layout_width="wrap_content"
@@ -243,12 +278,14 @@
             android:layout_weight="1"
             android:gravity="bottom"
             android:text="" />
-         <TextView
+
+        <TextView
             android:id="@+id/humidityLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Humidity" />
+
         <EditText
             android:id="@+id/humidity"
             android:layout_width="wrap_content"
@@ -257,16 +294,19 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <TextView
             android:id="@+id/notesLbl"
             android:gravity="right"
             android:layout_height="wrap_content"
             android:layout_width="100dip"
             android:text="Notes" />
+
         <EditText
             android:id="@+id/notes"
             android:layout_width="wrap_content"
@@ -275,10 +315,12 @@
             android:gravity="bottom"
             android:text="" />
     </LinearLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="42dp"
         android:orientation="horizontal">
+
         <Button
             android:id="@+id/btnSave"
             android:layout_width="90dip"
@@ -296,6 +338,7 @@
             android:layout_width="90dip"
             android:layout_height="wrap_content"
             android:text="Delete" />
+
         <Button
             android:id="@+id/btnCancel"
             android:layout_width="90dip"

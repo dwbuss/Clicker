@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Weather {
+
     public String temperature;
     public String feelsLike;
     public String dewPoint;
@@ -29,7 +30,7 @@ public class Weather {
     public String cloudCover;
 
     public void populate(double lat, double lon, Date cal, Context context, final VolleyCallBack callback) {
-        String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + lat + "," + lon + "," + (cal.getTime()/1000);
+        String url = "https://api.darksky.net/forecast/9741785dc8b4e476aa45f20076c71fd9/" + lat + "," + lon + "," + (cal.getTime() / 1000);
         populate(url, context, callback);
     }
 

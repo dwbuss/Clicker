@@ -1,6 +1,5 @@
 package com.example.clicker.objectbo;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -20,8 +19,6 @@ import com.example.clicker.MainActivity;
 import com.example.clicker.ObjectBoxApp;
 import com.example.clicker.R;
 
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;

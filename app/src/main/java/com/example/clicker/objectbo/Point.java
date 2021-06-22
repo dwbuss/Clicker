@@ -8,6 +8,7 @@ import io.objectbox.annotation.Id;
 
 @Entity
 public class Point {
+
     @Id
     private long id;
     private String name;

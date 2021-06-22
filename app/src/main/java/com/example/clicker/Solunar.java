@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 public class Solunar {
+
     public String longitude;
     public String latitude;
     public String offset;

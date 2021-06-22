@@ -36,8 +36,7 @@
         android:layout_centerVertical="true"
         android:padding="10dp"
         android:layout_marginRight="8dp"
-        android:layout_toLeftOf="@+id/btnDelete"
-         />
+        android:layout_toLeftOf="@+id/btnDelete" />
 
     <ImageButton
         android:id="@+id/btnDelete"
@@ -46,6 +45,5 @@
         android:padding="10dp"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
-        android:layout_alignParentRight="true"
-        />
+        android:layout_alignParentRight="true" />
 </RelativeLayout>

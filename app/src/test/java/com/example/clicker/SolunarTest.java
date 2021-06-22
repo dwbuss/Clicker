@@ -13,7 +13,7 @@ public class SolunarTest {
     public void testNotification() {
 
         Solunar solunar = new Solunar();
-        Location loc = new Location(""){
+        Location loc = new Location("") {
             @Override
             public double getLatitude() {
                 return 49.217314;

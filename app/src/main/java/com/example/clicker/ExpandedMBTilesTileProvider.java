@@ -18,6 +18,7 @@ public class ExpandedMBTilesTileProvider implements TileProvider {
     private final int width;
     private final int height;
 
+
     public ExpandedMBTilesTileProvider(final File source, final int width, final int height) {
         if (source == null) {
             throw new IllegalArgumentException("source cannot be null");

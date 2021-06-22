@@ -1,7 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
+
     <View
         android:id="@+id/lineView"
         android:layout_width="match_parent"
@@ -10,7 +12,7 @@
         android:background="#009688"
         android:layout_marginTop="15dp"
         android:gravity="center_horizontal"
-        android:visibility="visible"/>
+        android:visibility="visible" />
 
     <EditText
         android:id="@+id/etPlayerName"
@@ -22,6 +24,7 @@
         android:layout_marginRight="4dp"
         android:layout_marginBottom="4dp"
         android:hint="Player name" />
+
     <EditText
         android:id="@+id/etJerseyNumber"
         android:inputType="numberDecimal"
@@ -32,5 +35,5 @@
         android:layout_marginRight="4dp"
         android:layout_marginBottom="16dp"
         android:fontFamily="sans-serif"
-        android:hint="Jersey number"/>
+        android:hint="Jersey number" />
 </LinearLayout>

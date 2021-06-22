@@ -18,6 +18,7 @@ public class MyReceiver extends BroadcastReceiver {
     public static String NOTIFICATION_ID = "notification-id";
     private Location loc;
 
+
     public MyReceiver(Location loc) {
         this.loc = loc;
     }
